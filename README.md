@@ -1,5 +1,7 @@
 # VetPro App 🐾
 
+> **Sessão anterior (17/06):** Migramos todas as classes `slate` hardcoded para design tokens CSS (17 arquivos). Adicionamos `loading.tsx` + `error.tsx` no dashboard. Implementamos validação Zod nos formulários de pacientes, equipamentos e protocolos. Próximos passos sugeridos na seção [🤖 IA - Próximas Features](#-ia---próximas-features) e [📋 Roadmap](#-roadmap--melhorias-pendentes).
+
 SaaS de gestão veterinária focado em **fisioterapia e atendimento domiciliar**.  
 Funciona em notebook, tablet e celular.
 
@@ -159,6 +161,12 @@ Funciona em notebook, tablet e celular.
 - [ ] Financeiro: gráfico de linha (receita ao longo do tempo)
 - [ ] Notificações: lembrete por WhatsApp/e-mail (webhook)
 - [ ] Relatório: agendamento automático de PDF mensal
+
+### 🤖 IA - Próximas Features
+- [ ] **Sessão por Voz Completa**: criar sessão inteira por comando de voz (iniciar, registrar evolução, finalizar)
+- [ ] **Busca Inteligente**: busca textual natural em pacientes usando embeddings + pgvector
+- [ ] **Sugestão de Preço**: IA sugere valor do atendimento baseado em histórico e custos
+- [ ] **Relatório Semanal Automático**: IA compila métricas da semana em texto/PDF
 
 ---
 
