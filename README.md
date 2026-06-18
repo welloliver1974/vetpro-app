@@ -155,12 +155,27 @@ Funciona em notebook, tablet e celular.
 - [ ] Adicionar lint estrito (unicórnio, segurança)
 - [ ] CI/CD no GitHub Actions (build + lint + testes)
 
-### 💡 Funcionalidades Futuras
+### 💡 Funcionalidades Gerais
 - [ ] Dashboard: filtro por período (7d, 30d, personalizado)
+- [ ] Dashboard: widgets customizáveis (arrastar/soltar)
 - [ ] Agenda: visão mensal / diária
+- [ ] Agenda: agendamento recorrente (ex: toda segunda)
+- [ ] Pacientes: anamnese / ficha médica completa
+- [ ] Pacientes: múltiplos pets por tutor
+- [ ] Pacientes: timeline visual de evolução
+- [ ] Pacientes: gráfico de peso ao longo do tempo
 - [ ] Financeiro: gráfico de linha (receita ao longo do tempo)
+- [ ] Financeiro: emissão de nota fiscal / recibo
+- [ ] Financeiro: metas mensais de faturamento
+- [ ] Equipamentos: estoque de insumos e medicamentos
 - [ ] Notificações: lembrete por WhatsApp/e-mail (webhook)
 - [ ] Relatório: agendamento automático de PDF mensal
+- [ ] Offline: cache de dados para uso sem internet
+- [ ] Backup: exportar/importar dados (JSON)
+- [ ] Impressão: versão printer-friendly de fichas e relatórios
+- [ ] Papéis: permissões por função (admin, vet, assistente)
+- [ ] Internacionalização (i18n): suporte a outros idiomas
+- [ ] Auditoria: log de alterações em registros
 
 ### 🤖 IA - Próximas Features
 - [ ] **Sessão por Voz Completa**: criar sessão inteira por comando de voz (iniciar, registrar evolução, finalizar)
