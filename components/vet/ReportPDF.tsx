@@ -11,9 +11,10 @@ import type { Session } from '@/hooks/useSessions'
 type Props = {
   patient: Patient
   sessions: Session[]
+  assinaturaUrl?: string | null
 }
 
-export function ReportPDF({ patient, sessions }: Props) {
+export function ReportPDF({ patient, sessions, assinaturaUrl }: Props) {
   const reportRef = useRef<HTMLDivElement>(null)
   const loading = false
 
@@ -148,8 +149,16 @@ export function ReportPDF({ patient, sessions }: Props) {
           </div>
         )}
 
+        {/* Signature */}
+        {assinaturaUrl && (
+          <div style={{ marginTop: '24px', textAlign: 'center' }}>
+            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>Assinatura do Tutor</p>
+            <img src={assinaturaUrl} alt="Assinatura" style={{ maxHeight: '60px', maxWidth: '300px' }} />
+          </div>
+        )}
+
         {/* Footer */}
-        <div style={{ marginTop: '40px', paddingTop: '16px', borderTop: '1px solid #334155', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
+        <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #334155', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
           Relatório gerado pelo VetPro App em {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
         </div>
       </div>

@@ -149,7 +149,11 @@ export default function PatientDetailPage() {
             )}
           </div>
           <div className="flex gap-2">
-            <ReportPDF patient={patient} sessions={sessions || []} />
+            <ReportPDF
+              patient={patient}
+              sessions={sessions || []}
+              assinaturaUrl={patientAppointments.find((a) => a.assinatura_url)?.assinatura_url}
+            />
             <Button
               variant="outline"
               size="sm"

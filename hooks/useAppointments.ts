@@ -14,6 +14,7 @@ export type Appointment = {
   status: string
   valor: number | null
   forma_pagamento: string | null
+  assinatura_url: string | null
   created_at: string
   patients?: { nome: string; especie: string; endereco: string | null } | null
 }

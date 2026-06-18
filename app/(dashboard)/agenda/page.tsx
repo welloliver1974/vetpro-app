@@ -8,6 +8,8 @@ import { ptBR } from 'date-fns/locale'
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, type Appointment } from '@/hooks/useAppointments'
 import { usePatients } from '@/hooks/usePatients'
 import { useNotifications } from '@/hooks/useNotifications'
+import { SignaturePad } from '@/components/vet/SignaturePad'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -62,6 +64,8 @@ export default function AgendaPage() {
   const [finishingApp, setFinishingApp] = useState<Appointment | null>(null)
   const [finishValor, setFinishValor] = useState('')
   const [finishPayment, setFinishPayment] = useState('')
+  const [assinaturaUrl, setAssinaturaUrl] = useState('')
+  const [assinaturaDataUrl, setAssinaturaDataUrl] = useState('')
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -85,6 +89,8 @@ export default function AgendaPage() {
     setFinishingApp(app)
     setFinishValor(app.valor?.toString() || '')
     setFinishPayment(app.forma_pagamento || '')
+    setAssinaturaUrl(app.assinatura_url || '')
+    setAssinaturaDataUrl('')
     setFinishOpen(true)
   }
 
@@ -113,12 +119,26 @@ export default function AgendaPage() {
 
   async function handleConfirmFinish() {
     if (!finishingApp) return
+
+    let finalAssinaturaUrl = assinaturaUrl
+
+    // Save new signature to storage
+    if (assinaturaDataUrl && assinaturaDataUrl.startsWith('data:image')) {
+      const blob = await (await fetch(assinaturaDataUrl)).blob()
+      const path = `assinaturas/${finishingApp.id}.png`
+      const supabase = createClient()
+      await supabase.storage.from('session-media').upload(path, blob, { upsert: true })
+      const { data: { publicUrl } } = supabase.storage.from('session-media').getPublicUrl(path)
+      finalAssinaturaUrl = publicUrl
+    }
+
     await updateAppointment.mutateAsync({
       id: finishingApp.id,
       data: {
         status: 'concluido',
         valor: finishValor ? Number(finishValor) : null,
         forma_pagamento: finishPayment || null,
+        assinatura_url: finalAssinaturaUrl || null,
       } as Partial<Appointment>,
     })
     setFinishOpen(false)
@@ -459,6 +479,12 @@ export default function AgendaPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Assinatura */}
+              <SignaturePad
+                existingUrl={assinaturaUrl}
+                onSave={(dataUrl) => setAssinaturaDataUrl(dataUrl)}
+              />
 
               <div className="flex justify-end gap-3 pt-2">
                 <DialogClose asChild>
