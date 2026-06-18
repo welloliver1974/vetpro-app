@@ -88,3 +88,29 @@ export function useMonthSummary() {
     queryFn: fetchMonthSummary,
   })
 }
+
+type CostSummary = { custo_total: number; receita_total: number; margem_total: number }
+
+async function fetchCostSummary(): Promise<CostSummary> {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('valor, sessions!inner(custo)')
+    .eq('status', 'concluido')
+
+  if (error) throw error
+
+  const receita_total = data.reduce((s, a) => s + (Number(a.valor) || 0), 0)
+  const custo_total = data.reduce((s, a) => {
+    const custos = Array.isArray(a.sessions) ? a.sessions : [a.sessions]
+    return s + custos.reduce((s2, sess: { custo: number | null }) => s2 + (Number(sess.custo) || 0), 0)
+  }, 0)
+
+  return { custo_total, receita_total, margem_total: receita_total - custo_total }
+}
+
+export function useCostSummary() {
+  return useQuery({
+    queryKey: ['cost-summary'],
+    queryFn: fetchCostSummary,
+  })
+}

@@ -12,12 +12,14 @@ export type Session = {
   protocolo_id: string | null
   notas: string | null
   notas_evolucao: string | null
+  custo: number | null
   foto_urls: string[]
   created_at: string
   appointments?: {
     id: string
     data: string
     tipo: string
+    valor: number | null
     patients?: { nome: string; especie: string } | null
   } | null
 }
@@ -27,6 +29,7 @@ export type SessionInput = {
   protocolo_id?: string
   notas?: string
   notas_evolucao?: string
+  custo?: number
 }
 
 async function fetchSessionsByPatient(patientId: string): Promise<Session[]> {

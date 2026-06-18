@@ -57,6 +57,7 @@ export default function PatientDetailPage() {
   const [selectedProtocol, setSelectedProtocol] = useState('')
   const [notas, setNotas] = useState('')
   const [notasEvolucao, setNotasEvolucao] = useState('')
+  const [custo, setCusto] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
 
@@ -86,6 +87,7 @@ export default function PatientDetailPage() {
         protocolo_id: selectedProtocol || undefined,
         notas: notas || undefined,
         notas_evolucao: notasEvolucao || undefined,
+        custo: custo ? Number(custo) : undefined,
       })
 
       if (uploadedUrls.length > 0 && session?.id) {
@@ -98,6 +100,7 @@ export default function PatientDetailPage() {
       setDialogOpen(false)
       setNotas('')
       setNotasEvolucao('')
+      setCusto('')
       setFiles([])
       setSelectedAppointment('')
     } catch (err) {
@@ -232,8 +235,18 @@ export default function PatientDetailPage() {
                         )}
                       </div>
                       <Badge variant="outline" className="border-slate-700 text-slate-400 text-[10px]">
-                        {session.foto_urls?.length || 0} mídias
-                      </Badge>
+                    {session.foto_urls?.length || 0} mídias
+                  </Badge>
+                  <div className="text-right text-xs">
+                    {session.custo && (
+                      <p className="text-slate-500">Custo: R$ {Number(session.custo).toFixed(2)}</p>
+                    )}
+                    {session.custo && app?.valor && (
+                      <p className={Number(app.valor) - Number(session.custo) >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                        Margem: R$ {(Number(app.valor) - Number(session.custo)).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -551,6 +564,18 @@ export default function PatientDetailPage() {
                 rows={3}
                 className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-300">Custo da Sessão (R$)</Label>
+              <Input
+                type="number" step="0.01" min="0"
+                value={custo}
+                onChange={(e) => setCusto(e.target.value)}
+                placeholder="0,00"
+                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+              />
+              <p className="text-xs text-slate-500">Energia, material descartável, etc.</p>
             </div>
 
             <div className="space-y-2">

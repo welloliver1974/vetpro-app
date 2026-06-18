@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useCompletedAppointments, useTodaySummary, useMonthSummary } from '@/hooks/useFinances'
+import { useCompletedAppointments, useTodaySummary, useMonthSummary, useCostSummary } from '@/hooks/useFinances'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, DollarSign, TrendingUp, CalendarDays, Download } from 'lucide-react'
+import { Loader2, DollarSign, TrendingUp, CalendarDays, Download, Receipt } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
@@ -30,6 +30,7 @@ export default function FinanceiroPage() {
   const { data: completed, isLoading } = useCompletedAppointments()
   const { data: today } = useTodaySummary()
   const { data: month } = useMonthSummary()
+  const { data: costs } = useCostSummary()
   const [page, setPage] = useState(1)
   const perPage = 15
 
@@ -65,7 +66,7 @@ export default function FinanceiroPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
+      <div className="grid gap-4 md:grid-cols-4 mb-8">
         <Card className="bg-slate-900 border-slate-800">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-400">Hoje</CardTitle>
@@ -102,6 +103,23 @@ export default function FinanceiroPage() {
               R$ {totalGeral.toFixed(2)}
             </div>
             <p className="text-xs text-slate-500 mt-1">{completed?.length ?? 0} atendimento(s)</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-900 border-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-slate-400">Custos Totais</CardTitle>
+            <Receipt className="h-4 w-4 text-rose-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-slate-100">
+              R$ {costs?.custo_total.toFixed(2) ?? '0,00'}
+            </div>
+            <p className="text-xs mt-1">
+              <span className={costs && costs.margem_total >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                Margem: R$ {costs?.margem_total.toFixed(2) ?? '0,00'}
+              </span>
+            </p>
           </CardContent>
         </Card>
       </div>
