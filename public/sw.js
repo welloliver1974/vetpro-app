@@ -1,11 +1,8 @@
-const CACHE = 'vetpro-v1'
-
+const CACHE = 'vetpro-v2'
 const offlineUrl = '/offline'
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((cache) => cache.add(offlineUrl))
-  )
+  e.waitUntil(caches.open(CACHE).then((cache) => cache.add(offlineUrl)))
   self.skipWaiting()
 })
 
@@ -22,12 +19,16 @@ self.addEventListener('fetch', (e) => {
   const { request } = e
   const url = new URL(request.url)
 
-  // Only cache same-origin GET requests
+  // Only handle same-origin GET requests
   if (request.method !== 'GET' || url.origin !== location.origin) return
 
-  // Don't cache /auth pages or API calls
+  // Don't cache JS chunks (they change on every build)
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.json')) return
+
+  // Don't cache auth or API routes
   if (url.pathname.startsWith('/auth/') || url.pathname.startsWith('/api/')) return
 
+  // Network-first for pages, cache as fallback
   e.respondWith(
     fetch(request)
       .then((res) => {
@@ -35,8 +36,12 @@ self.addEventListener('fetch', (e) => {
         caches.open(CACHE).then((cache) => cache.put(request, clone))
         return res
       })
-      .catch(() => caches.match(request).then((cached) => cached || caches.match(offlineUrl)))
+      .catch(() => caches.match(request))
   )
+})
+
+self.addEventListener('message', (e) => {
+  if (e.data === 'skipWaiting') self.skipWaiting()
 })
 
 self.addEventListener('push', (e) => {
