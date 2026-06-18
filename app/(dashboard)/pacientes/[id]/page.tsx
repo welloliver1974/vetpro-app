@@ -516,11 +516,50 @@ export default function PatientDetailPage() {
 
             <div className="space-y-2">
               <Label className="text-slate-300">Anotações da Sessão</Label>
-              <div className="flex gap-2 mb-2">
+              <div className="flex flex-wrap gap-2 mb-2">
                 <AudioRecorder
                   transcribeFn={(blob) => transcribeAi.transcribe(blob)}
                   onTranscription={(text) => setNotas((prev) => prev + text)}
                 />
+                {notas && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    disabled={chatAi.loading}
+                    onClick={async () => {
+                      try {
+                        const analise = await chatAi.generate(
+                          `Analise clinicamente estas anotações de fisioterapia veterinária e produza:\n\n` +
+                          `1) RESUMO CLÍNICO (2-3 linhas sobre o caso)\n` +
+                          `2) ACHADOS (listar pontos relevantes)\n` +
+                          `3) CONDUTA (próximos passos sugeridos)\n\n` +
+                          `Anotações:\n${notas}\n\n` +
+                          `Formate com headers em MAIÚSCULO e use linhas separadas.`,
+                          'Você é um fisioterapeuta veterinário especialista em reabilitação animal.'
+                        )
+                        // Split into session notes and evolution notes
+                        const parts = analise.split(/CONDUTA|PRÓXIMOS PASSOS/i)
+                        if (parts.length >= 2) {
+                          setNotas('📋 ' + parts[0].trim())
+                          setNotasEvolucao('🎯 Conduta: ' + parts.slice(1).join('').trim())
+                        } else {
+                          setNotas(analise)
+                        }
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : 'Erro ao analisar')
+                      }
+                    }}
+                    className="border-indigo-700 text-indigo-400 hover:bg-indigo-950/30 gap-1"
+                  >
+                    {chatAi.loading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    Analisar Clínica
+                  </Button>
+                )}
               </div>
               <Textarea
                 value={notas}
