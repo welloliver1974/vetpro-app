@@ -19,7 +19,8 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Toaster } from 'sonner'
-import { Plus, Pencil, Trash2, Loader2, FileText } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, FileText, AlertCircle } from 'lucide-react'
+import { protocolSchema } from '@/lib/validations'
 
 export default function ProtocolsPage() {
   const { data: protocols, isLoading } = useProtocols()
@@ -33,12 +34,14 @@ export default function ProtocolsPage() {
   const [form, setForm] = useState<ProtocolInput>({
     nome: '', descricao: '', equipamento_id: '', configuracoes_padrao: {},
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [configKey, setConfigKey] = useState('')
   const [configValue, setConfigValue] = useState('')
 
   function openCreate() {
     setEditing(null)
     setForm({ nome: '', descricao: '', equipamento_id: '', configuracoes_padrao: {} })
+    setErrors({})
     setDialogOpen(true)
   }
 
@@ -50,17 +53,24 @@ export default function ProtocolsPage() {
       equipamento_id: protocol.equipamento_id || '',
       configuracoes_padrao: protocol.configuracoes_padrao || {},
     })
+    setErrors({})
     setDialogOpen(true)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const payload = {
-      ...form,
-      equipamento_id: form.equipamento_id || undefined,
-      configuracoes_padrao: Object.keys(form.configuracoes_padrao || {}).length > 0
-        ? form.configuracoes_padrao : undefined,
+    const result = protocolSchema.safeParse(form)
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {}
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as string
+        if (!fieldErrors[field]) fieldErrors[field] = issue.message
+      }
+      setErrors(fieldErrors)
+      return
     }
+    setErrors({})
+    const payload = result.data as ProtocolInput
     if (editing) {
       await updateProtocol.mutateAsync({ id: editing.id, data: payload })
     } else {
@@ -182,9 +192,10 @@ export default function ProtocolsPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label className="text-foreground">Nome do Protocolo *</Label>
-              <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                required placeholder="Ex: Protocolo de Artrite"
+              <Input value={form.nome} onChange={(e) => { setForm({ ...form, nome: e.target.value }); setErrors({ ...errors, nome: '' }) }}
+                placeholder="Ex: Protocolo de Artrite"
                 className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground" />
+              {errors.nome && <p className="text-xs text-destructive flex items-center gap-1 mt-1"><AlertCircle className="h-3 w-3" />{errors.nome}</p>}
             </div>
 
             <div className="space-y-2">

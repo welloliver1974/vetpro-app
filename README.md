@@ -130,7 +130,7 @@ Funciona em notebook, tablet e celular.
 - [ ] Página `not-found.tsx` customizada
 - [ ] Testes unitários (Vitest + Testing Library) para hooks
 - [ ] Testes de integração ou e2e (Playwright)
-- [ ] Validação de formulários com Zod
+- [x] Validação de formulários com Zod
 - [ ] toast de erro global unificado (rede, auth, etc.)
 
 ### 🎨 UI/UX

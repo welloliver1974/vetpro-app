@@ -13,7 +13,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose,
 } from '@/components/ui/dialog'
 import { Toaster } from 'sonner'
-import { Plus, Pencil, Trash2, Loader2, Wrench, CalendarDays } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Wrench, CalendarDays, AlertCircle } from 'lucide-react'
+import { equipmentSchema } from '@/lib/validations'
 import { format, parseISO } from 'date-fns'
 
 export default function EquipmentsPage() {
@@ -25,10 +26,12 @@ export default function EquipmentsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Equipment | null>(null)
   const [form, setForm] = useState<EquipmentInput>({ nome: '', modelo: '', ultima_manutencao: '' })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   function openCreate() {
     setEditing(null)
     setForm({ nome: '', modelo: '', ultima_manutencao: '' })
+    setErrors({})
     setDialogOpen(true)
   }
 
@@ -39,14 +42,26 @@ export default function EquipmentsPage() {
       modelo: eq.modelo || '',
       ultima_manutencao: eq.ultima_manutencao || '',
     })
+    setErrors({})
     setDialogOpen(true)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const result = equipmentSchema.safeParse(form)
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {}
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as string
+        if (!fieldErrors[field]) fieldErrors[field] = issue.message
+      }
+      setErrors(fieldErrors)
+      return
+    }
+    setErrors({})
     const payload = {
-      ...form,
-      ultima_manutencao: form.ultima_manutencao || undefined,
+      ...result.data,
+      ultima_manutencao: result.data.ultima_manutencao || undefined,
     }
     if (editing) {
       await updateEquipment.mutateAsync({ id: editing.id, data: payload })
@@ -151,9 +166,10 @@ export default function EquipmentsPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label className="text-foreground">Nome *</Label>
-              <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                required placeholder="Ex: Laserterapia 808nm"
+              <Input value={form.nome} onChange={(e) => { setForm({ ...form, nome: e.target.value }); setErrors({ ...errors, nome: '' }) }}
+                placeholder="Ex: Laserterapia 808nm"
                 className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground" />
+              {errors.nome && <p className="text-xs text-destructive flex items-center gap-1 mt-1"><AlertCircle className="h-3 w-3" />{errors.nome}</p>}
             </div>
             <div className="space-y-2">
               <Label className="text-foreground">Modelo</Label>

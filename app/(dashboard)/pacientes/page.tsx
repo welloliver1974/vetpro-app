@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Toaster } from 'sonner'
-import { Plus, Pencil, Trash2, Loader2, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Search, AlertCircle } from 'lucide-react'
+import { patientSchema } from '@/lib/validations'
 
 export default function PatientsPage() {
   const { data: patients, isLoading } = usePatients()
@@ -31,10 +32,12 @@ export default function PatientsPage() {
   const [form, setForm] = useState<PatientInput>({
     nome: '', especie: '', raca: '', tutor_nome: '', tutor_contato: '', endereco: '',
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   function openCreate() {
     setEditing(null)
     setForm({ nome: '', especie: '', raca: '', tutor_nome: '', tutor_contato: '', endereco: '' })
+    setErrors({})
     setDialogOpen(true)
   }
 
@@ -48,15 +51,27 @@ export default function PatientsPage() {
       tutor_contato: patient.tutor_contato || '',
       endereco: patient.endereco || '',
     })
+    setErrors({})
     setDialogOpen(true)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const result = patientSchema.safeParse(form)
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {}
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as string
+        if (!fieldErrors[field]) fieldErrors[field] = issue.message
+      }
+      setErrors(fieldErrors)
+      return
+    }
+    setErrors({})
     if (editing) {
-      await updatePatient.mutateAsync({ id: editing.id, data: form })
+      await updatePatient.mutateAsync({ id: editing.id, data: result.data })
     } else {
-      await createPatient.mutateAsync(form)
+      await createPatient.mutateAsync(result.data)
     }
     setDialogOpen(false)
   }
@@ -215,10 +230,10 @@ export default function PatientsPage() {
               <Label className="text-foreground">Nome do animal *</Label>
               <Input
                 value={form.nome}
-                onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                required
+                onChange={(e) => { setForm({ ...form, nome: e.target.value }); setErrors({ ...errors, nome: '' }) }}
                 className="bg-muted border-border text-card-foreground"
               />
+              {errors.nome && <p className="text-xs text-destructive flex items-center gap-1 mt-1"><AlertCircle className="h-3 w-3" />{errors.nome}</p>}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
