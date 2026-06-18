@@ -7,6 +7,7 @@ import {
 import { ptBR } from 'date-fns/locale'
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, type Appointment } from '@/hooks/useAppointments'
 import { usePatients } from '@/hooks/usePatients'
+import { useNotifications } from '@/hooks/useNotifications'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +21,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Toaster } from 'sonner'
 import {
-  ChevronLeft, ChevronRight, MapPin, Loader2, Trash2, CheckCircle2, Filter,
+  ChevronLeft, ChevronRight, MapPin, Loader2, Trash2, CheckCircle2, Filter, Bell, BellOff,
 } from 'lucide-react'
 
 const typeColors: Record<string, string> = {
@@ -42,10 +43,14 @@ export default function AgendaPage() {
   const createAppointment = useCreateAppointment()
   const updateAppointment = useUpdateAppointment()
   const deleteAppointment = useDeleteAppointment()
+  const notif = useNotifications()
 
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState('')
   const [form, setForm] = useState<{ paciente_id: string; tipo: 'fisio' | 'clinico' | 'externo'; hora: string; valor: string }>({ paciente_id: '', tipo: 'clinico', hora: '08:00', valor: '' })
+  const [notifGranted, setNotifGranted] = useState<'granted' | 'denied' | 'default'>(
+    typeof window !== 'undefined' ? Notification.permission : 'default'
+  )
 
   // Filtros
   const [filterTipo, setFilterTipo] = useState<string>('')
@@ -93,6 +98,16 @@ export default function AgendaPage() {
       tipo: form.tipo,
       valor: form.valor ? Number(form.valor) : undefined,
     })
+
+    // Schedule reminder 15min before
+    const reminder = new Date(date.getTime() - 15 * 60 * 1000)
+    const patientName = patients?.find((p) => p.id === form.paciente_id)?.nome || 'paciente'
+    notif.scheduleReminder(
+      'Atendimento em breve!',
+      reminder,
+      `${patientName} - ${form.tipo === 'fisio' ? 'Fisioterapia' : form.tipo === 'externo' ? 'Externo' : 'Clínico'} às ${form.hora}`
+    )
+
     setCreateOpen(false)
   }
 
@@ -140,6 +155,18 @@ export default function AgendaPage() {
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}
             className="border-slate-700 text-slate-400 ml-2">
             Hoje
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              const ok = await notif.requestPermission()
+              setNotifGranted(ok ? 'granted' : 'denied')
+            }}
+            className={`ml-1 ${notifGranted === 'granted' ? 'text-emerald-400' : 'text-slate-500'}`}
+            title={notifGranted === 'granted' ? 'Notificações ativas' : 'Ativar notificações'}
+          >
+            {notifGranted === 'granted' ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
           </Button>
         </div>
       </div>
