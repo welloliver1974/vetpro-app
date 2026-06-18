@@ -122,6 +122,46 @@ Funciona em notebook, tablet e celular.
 
 ---
 
+## 📋 Roadmap / Melhorias Pendentes
+
+### 🧱 Infraestrutura
+- [x] `loading.tsx` em cada route group (skeleton/spinner)
+- [x] `error.tsx` em cada página (error boundary amigável)
+- [ ] Página `not-found.tsx` customizada
+- [ ] Testes unitários (Vitest + Testing Library) para hooks
+- [ ] Testes de integração ou e2e (Playwright)
+- [ ] Validação de formulários com Zod
+- [ ] toast de erro global unificado (rede, auth, etc.)
+
+### 🎨 UI/UX
+- [ ] Migrar páginas `'use client'` para Server Components onde possível (dados iniciais)
+- [ ] Substituir `text-indigo-*` restantes por `text-primary`/design tokens
+- [ ] Responsividade: revisar mobile em todas as páginas
+- [ ] Estado vazio ilustrado (nenhum paciente, nenhuma sessão, etc.)
+
+### 🔒 Segurança
+- [ ] Criptografar ou ofuscar API Key da IA no localStorage
+- [ ] Revisar RLS policies para garantir isolamento
+
+### 🚀 Performance
+- [ ] Adicionar `loading.tsx` com suspense boundaries nas rotas com dados
+- [ ] Otimizar queries do Supabase (select específico, evitar `select *`)
+- [ ] Revisar bundle com `next/bundle-analyzer`
+
+### 🧪 Qualidade
+- [ ] Corrigir alias `pacientes:nome` em `lib/supabase/queries.ts`
+- [ ] Adicionar lint estrito (unicórnio, segurança)
+- [ ] CI/CD no GitHub Actions (build + lint + testes)
+
+### 💡 Funcionalidades Futuras
+- [ ] Dashboard: filtro por período (7d, 30d, personalizado)
+- [ ] Agenda: visão mensal / diária
+- [ ] Financeiro: gráfico de linha (receita ao longo do tempo)
+- [ ] Notificações: lembrete por WhatsApp/e-mail (webhook)
+- [ ] Relatório: agendamento automático de PDF mensal
+
+---
+
 ## Estrutura de Pastas
 
 ```
