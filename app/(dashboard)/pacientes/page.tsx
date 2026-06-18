@@ -91,80 +91,80 @@ export default function PatientsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Pacientes</h1>
-          <p className="text-sm text-slate-400">Gerencie seus pacientes</p>
+          <p className="text-sm text-muted-foreground">Gerencie seus pacientes</p>
         </div>
-        <Button onClick={openCreate} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+        <Button onClick={openCreate} className="bg-primary hover:bg-primary/90 text-white gap-2">
           <Plus className="h-4 w-4" /> Novo Paciente
         </Button>
       </div>
 
       {/* Search */}
       <div className="relative mb-6 max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar por nome ou tutor..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
+          className="pl-10 bg-card border-border text-card-foreground placeholder:text-muted-foreground"
         />
       </div>
 
       {/* Table */}
-      <Card className="bg-slate-900 border-slate-800">
+      <Card className="bg-card border-border">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-800 hover:bg-transparent">
-                <TableHead className="text-slate-400">Nome</TableHead>
-                <TableHead className="text-slate-400 hidden md:table-cell">Espécie</TableHead>
-                <TableHead className="text-slate-400 hidden md:table-cell">Raça</TableHead>
-                <TableHead className="text-slate-400">Tutor</TableHead>
-                <TableHead className="text-slate-400 text-right">Ações</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground">Nome</TableHead>
+                <TableHead className="text-muted-foreground hidden md:table-cell">Espécie</TableHead>
+                <TableHead className="text-muted-foreground hidden md:table-cell">Raça</TableHead>
+                <TableHead className="text-muted-foreground">Tutor</TableHead>
+                <TableHead className="text-muted-foreground text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     Nenhum paciente encontrado
                   </TableCell>
                 </TableRow>
               ) : (
                 paginated.map((patient) => (
-                  <TableRow key={patient.id} className="border-slate-800 hover:bg-slate-800/50">
-                    <TableCell className="font-medium text-slate-200">
-                    <Link href={`/pacientes/${patient.id}`} className="hover:text-indigo-400 transition-colors">
+                  <TableRow key={patient.id} className="border-border hover:bg-muted/50">
+                    <TableCell className="font-medium text-card-foreground">
+                    <Link href={`/pacientes/${patient.id}`} className="hover:text-blue-400 transition-colors">
                       {patient.nome}
                     </Link>
                   </TableCell>
-                    <TableCell className="text-slate-400 hidden md:table-cell">
+                    <TableCell className="text-muted-foreground hidden md:table-cell">
                       {patient.especie && (
-                        <Badge variant="outline" className="border-slate-700 text-slate-300">
+                        <Badge variant="outline" className="border-border text-foreground">
                           {patient.especie}
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-slate-400 hidden md:table-cell">{patient.raca || '-'}</TableCell>
-                    <TableCell className="text-slate-400">{patient.tutor_nome || '-'}</TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">{patient.raca || '-'}</TableCell>
+                    <TableCell className="text-muted-foreground">{patient.tutor_nome || '-'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost" size="icon-xs"
                           onClick={() => openEdit(patient)}
-                          className="text-slate-400 hover:text-indigo-400"
+                          className="text-muted-foreground hover:text-blue-400"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost" size="icon-xs"
                           onClick={() => handleDelete(patient.id, patient.nome)}
-                          className="text-slate-400 hover:text-red-400"
+                          className="text-muted-foreground hover:text-red-400"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -181,23 +181,23 @@ export default function PatientsPage() {
       {/* Paginação */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Mostrando {(page - 1) * perPage + 1}-{Math.min(page * perPage, filtered.length)} de {filtered.length}
           </p>
           <div className="flex gap-1">
             <Button variant="outline" size="xs" disabled={page <= 1} onClick={() => setPage(page - 1)}
-              className="border-slate-700 text-slate-400">
+              className="border-border text-muted-foreground">
               Anterior
             </Button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <Button key={p} variant={p === page ? 'default' : 'outline'} size="xs"
                 onClick={() => setPage(p)}
-                className={p === page ? 'bg-indigo-600 text-white' : 'border-slate-700 text-slate-400'}>
+                className={p === page ? 'bg-primary text-white' : 'border-border text-muted-foreground'}>
                 {p}
               </Button>
             ))}
             <Button variant="outline" size="xs" disabled={page >= totalPages} onClick={() => setPage(page + 1)}
-              className="border-slate-700 text-slate-400">
+              className="border-border text-muted-foreground">
               Próximo
             </Button>
           </div>
@@ -206,72 +206,72 @@ export default function PatientsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+        <DialogContent className="bg-card border-border text-card-foreground">
           <DialogHeader>
             <DialogTitle>{editing ? 'Editar Paciente' : 'Novo Paciente'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">Nome do animal *</Label>
+              <Label className="text-foreground">Nome do animal *</Label>
               <Input
                 value={form.nome}
                 onChange={(e) => setForm({ ...form, nome: e.target.value })}
                 required
-                className="bg-slate-800 border-slate-700 text-slate-100"
+                className="bg-muted border-border text-card-foreground"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Espécie</Label>
+                <Label className="text-foreground">Espécie</Label>
                 <Input
                   value={form.especie}
                   onChange={(e) => setForm({ ...form, especie: e.target.value })}
                   placeholder="Ex: Canina"
-                  className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                  className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Raça</Label>
+                <Label className="text-foreground">Raça</Label>
                 <Input
                   value={form.raca}
                   onChange={(e) => setForm({ ...form, raca: e.target.value })}
                   placeholder="Ex: Golden"
-                  className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                  className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-300">Nome do Tutor</Label>
+              <Label className="text-foreground">Nome do Tutor</Label>
               <Input
                 value={form.tutor_nome}
                 onChange={(e) => setForm({ ...form, tutor_nome: e.target.value })}
-                className="bg-slate-800 border-slate-700 text-slate-100"
+                className="bg-muted border-border text-card-foreground"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-300">Contato do Tutor</Label>
+              <Label className="text-foreground">Contato do Tutor</Label>
               <Input
                 value={form.tutor_contato}
                 onChange={(e) => setForm({ ...form, tutor_contato: e.target.value })}
-                className="bg-slate-800 border-slate-700 text-slate-100"
+                className="bg-muted border-border text-card-foreground"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-300">Endereço (para atendimento externo)</Label>
+              <Label className="text-foreground">Endereço (para atendimento externo)</Label>
               <Input
                 value={form.endereco}
                 onChange={(e) => setForm({ ...form, endereco: e.target.value })}
                 placeholder="Rua, número, bairro, cidade..."
-                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground"
               />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <DialogClose asChild>
-                <Button type="button" variant="outline" className="border-slate-700 text-slate-300">
+                <Button type="button" variant="outline" className="border-border text-foreground">
                   Cancelar
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              <Button type="submit" disabled={isPending} className="bg-primary hover:bg-primary/90 text-white">
                 {isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 {editing ? 'Salvar' : 'Cadastrar'}
               </Button>

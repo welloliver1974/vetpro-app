@@ -80,10 +80,10 @@ export function SignaturePad({ onSave, existingUrl }: SignaturePadProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-500">Assinatura do Tutor</p>
+        <p className="text-xs text-muted-foreground">Assinatura do Tutor</p>
         {hasContent && (
           <Button type="button" variant="ghost" size="xs" onClick={clear}
-            className="text-slate-500 hover:text-red-400 gap-1">
+            className="text-muted-foreground hover:text-red-400 gap-1">
             <Trash2 className="h-3 w-3" /> Limpar
           </Button>
         )}
@@ -99,7 +99,7 @@ export function SignaturePad({ onSave, existingUrl }: SignaturePadProps) {
         onTouchStart={start}
         onTouchMove={move}
         onTouchEnd={stop}
-        className="w-full rounded-lg border border-slate-700 bg-slate-900 touch-none cursor-crosshair"
+        className="w-full rounded-lg border border-border bg-card touch-none cursor-crosshair"
       />
     </div>
   )

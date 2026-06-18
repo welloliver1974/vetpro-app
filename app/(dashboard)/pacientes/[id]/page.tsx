@@ -116,7 +116,7 @@ export default function PatientDetailPage() {
   if (!patient) {
     return (
       <div className="p-4 md:p-8 flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -126,19 +126,19 @@ export default function PatientDetailPage() {
       <Toaster richColors position="top-center" />
 
       <div className="mb-6">
-        <Link href="/pacientes" className="text-sm text-slate-400 hover:text-indigo-400 flex items-center gap-1 mb-2">
+        <Link href="/pacientes" className="text-sm text-muted-foreground hover:text-indigo-400 flex items-center gap-1 mb-2">
           <ArrowLeft className="h-3 w-3" /> Voltar
         </Link>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{patient.nome}</h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted-foreground">
               {patient.especie && `${patient.especie}${patient.raca ? ` - ${patient.raca}` : ''}`}
               {patient.tutor_nome && ` | Tutor: ${patient.tutor_nome}`}
               {patient.tutor_contato && ` | ${patient.tutor_contato}`}
             </p>
             {patient.endereco && (
-              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                 📍 {patient.endereco}
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(patient.endereco)}`}
@@ -238,20 +238,20 @@ export default function PatientDetailPage() {
       </div>
 
       <Tabs defaultValue="sessoes" className="space-y-6">
-        <TabsList className="bg-slate-900 border border-slate-800">
-          <TabsTrigger value="sessoes" className="text-slate-400 data-[state=active]:text-indigo-400">Sessões</TabsTrigger>
-          <TabsTrigger value="galeria" className="text-slate-400 data-[state=active]:text-indigo-400">Galeria de Evolução</TabsTrigger>
+        <TabsList className="bg-card border border-border">
+          <TabsTrigger value="sessoes" className="text-muted-foreground data-[state=active]:text-indigo-400">Sessões</TabsTrigger>
+          <TabsTrigger value="galeria" className="text-muted-foreground data-[state=active]:text-indigo-400">Galeria de Evolução</TabsTrigger>
         </TabsList>
 
         {/* Sessões Tab */}
         <TabsContent value="sessoes" className="space-y-4">
           {isLoading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : !sessions?.length ? (
-            <Card className="bg-slate-900 border-slate-800">
-              <CardContent className="p-8 text-center text-slate-500">
+            <Card className="bg-card border-border">
+              <CardContent className="p-8 text-center text-muted-foreground">
                 Nenhuma sessão registrada ainda
               </CardContent>
             </Card>
@@ -259,14 +259,14 @@ export default function PatientDetailPage() {
             sessions.map((session) => {
               const app = patientAppointments.find((a) => a.id === session.appointment_id)
               return (
-                <Card key={session.id} className="bg-slate-900 border-slate-800">
+                <Card key={session.id} className="bg-card border-border">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-sm text-slate-200">
+                        <CardTitle className="text-sm text-card-foreground">
                           {app ? format(parseISO(app.data), "d 'de' MMM 'às' HH:mm", { locale: ptBR }) : 'Data não encontrada'}
                         </CardTitle>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-muted-foreground">
                           {app?.tipo === 'fisio' ? 'Fisioterapia' : app?.tipo === 'externo' ? 'Externo' : 'Clínico'}
                         </p>
                         {session.protocolo_id && protocols?.find((p) => p.id === session.protocolo_id) && (
@@ -275,12 +275,12 @@ export default function PatientDetailPage() {
                           </p>
                         )}
                       </div>
-                      <Badge variant="outline" className="border-slate-700 text-slate-400 text-[10px]">
+                      <Badge variant="outline" className="border-border text-muted-foreground text-[10px]">
                     {session.foto_urls?.length || 0} mídias
                   </Badge>
                   <div className="text-right text-xs">
                     {session.custo && (
-                      <p className="text-slate-500">Custo: R$ {Number(session.custo).toFixed(2)}</p>
+                      <p className="text-muted-foreground">Custo: R$ {Number(session.custo).toFixed(2)}</p>
                     )}
                     {session.custo && app?.valor && (
                       <p className={Number(app.valor) - Number(session.custo) >= 0 ? 'text-emerald-400' : 'text-red-400'}>
@@ -293,14 +293,14 @@ export default function PatientDetailPage() {
                   <CardContent className="space-y-3">
                     {session.notas && (
                       <div>
-                        <p className="text-xs text-slate-500 mb-1">Anotações da sessão:</p>
-                        <p className="text-sm text-slate-300 whitespace-pre-wrap">{session.notas}</p>
+                        <p className="text-xs text-muted-foreground mb-1">Anotações da sessão:</p>
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{session.notas}</p>
                       </div>
                     )}
                     {session.notas_evolucao && (
                       <div>
-                        <p className="text-xs text-slate-500 mb-1">Evolução:</p>
-                        <p className="text-sm text-slate-300 whitespace-pre-wrap">{session.notas_evolucao}</p>
+                        <p className="text-xs text-muted-foreground mb-1">Evolução:</p>
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{session.notas_evolucao}</p>
                       </div>
                     )}
                     {session.foto_urls && session.foto_urls.length > 0 && (
@@ -318,7 +318,7 @@ export default function PatientDetailPage() {
                                 <img
                                   src={url}
                                   alt={`Foto ${i + 1}`}
-                                  className="rounded-lg border border-slate-700 w-full h-24 object-cover hover:opacity-80 transition-opacity"
+                                  className="rounded-lg border border-border w-full h-24 object-cover hover:opacity-80 transition-opacity"
                                 />
                               </a>
                             ))}
@@ -348,8 +348,8 @@ export default function PatientDetailPage() {
 
             if (!allPhotos.length) {
               return (
-                <Card className="bg-slate-900 border-slate-800">
-                  <CardContent className="p-8 text-center text-slate-500">
+                <Card className="bg-card border-border">
+                  <CardContent className="p-8 text-center text-muted-foreground">
                     Nenhuma mídia registrada
                   </CardContent>
                 </Card>
@@ -367,24 +367,24 @@ export default function PatientDetailPage() {
             return (
               <div className="space-y-4">
                 {/* Comparison toolbar */}
-                <Card className="bg-slate-900 border-slate-800">
+                <Card className="bg-card border-border">
                   <CardContent className="p-4">
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
                       {/* Slot 1 - Antes */}
                       <div className="flex-1 w-full">
-                        <p className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                        <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                           <ImageUp className="h-3 w-3 text-emerald-400" /> Antes
                         </p>
                         {slot1 ? (
                           <div className="relative">
-                            <img src={slot1.url} alt="Antes" className="w-full h-24 object-cover rounded-lg border border-slate-700" />
+                            <img src={slot1.url} alt="Antes" className="w-full h-24 object-cover rounded-lg border border-border" />
                             <button onClick={() => setSlot1(null)} className="absolute top-1 right-1 bg-black/60 rounded p-0.5">
-                              <X className="h-3 w-3 text-slate-300" />
+                              <X className="h-3 w-3 text-foreground" />
                             </button>
-                            <span className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-slate-300 px-1 py-0.5 rounded">{slot1.date}</span>
+                            <span className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-foreground px-1 py-0.5 rounded">{slot1.date}</span>
                           </div>
                         ) : (
-                          <div className="w-full h-24 rounded-lg border border-dashed border-slate-700 flex items-center justify-center text-xs text-slate-600">
+                          <div className="w-full h-24 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-slate-600">
                             Clique numa foto
                           </div>
                         )}
@@ -392,24 +392,24 @@ export default function PatientDetailPage() {
 
                       {/* VS */}
                       <div className="hidden md:flex items-center justify-center">
-                        <ScanSearch className="h-6 w-6 text-indigo-500" />
+                        <ScanSearch className="h-6 w-6 text-blue-500" />
                       </div>
 
                       {/* Slot 2 - Depois */}
                       <div className="flex-1 w-full">
-                        <p className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                        <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                           <ImageDown className="h-3 w-3 text-indigo-400" /> Depois
                         </p>
                         {slot2 ? (
                           <div className="relative">
-                            <img src={slot2.url} alt="Depois" className="w-full h-24 object-cover rounded-lg border border-slate-700" />
+                            <img src={slot2.url} alt="Depois" className="w-full h-24 object-cover rounded-lg border border-border" />
                             <button onClick={() => setSlot2(null)} className="absolute top-1 right-1 bg-black/60 rounded p-0.5">
-                              <X className="h-3 w-3 text-slate-300" />
+                              <X className="h-3 w-3 text-foreground" />
                             </button>
-                            <span className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-slate-300 px-1 py-0.5 rounded">{slot2.date}</span>
+                            <span className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-foreground px-1 py-0.5 rounded">{slot2.date}</span>
                           </div>
                         ) : (
-                          <div className="w-full h-24 rounded-lg border border-dashed border-slate-700 flex items-center justify-center text-xs text-slate-600">
+                          <div className="w-full h-24 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-slate-600">
                             Clique numa foto
                           </div>
                         )}
@@ -450,11 +450,11 @@ export default function PatientDetailPage() {
                       <div className="mt-4 p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/50">
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-xs text-indigo-400 font-medium mb-1">🔍 Análise de Evolução</p>
-                          <button onClick={() => setAnalysisResult(null)} className="text-slate-500 hover:text-slate-300">
+                          <button onClick={() => setAnalysisResult(null)} className="text-muted-foreground hover:text-foreground">
                             <X className="h-3 w-3" />
                           </button>
                         </div>
-                        <p className="text-sm text-slate-200 whitespace-pre-wrap">{analysisResult}</p>
+                        <p className="text-sm text-card-foreground whitespace-pre-wrap">{analysisResult}</p>
                       </div>
                     )}
                   </CardContent>
@@ -486,10 +486,10 @@ export default function PatientDetailPage() {
                               ? 'border-emerald-500 ring-2 ring-emerald-500/50'
                               : isSlot2
                               ? 'border-indigo-500 ring-2 ring-indigo-500/50'
-                              : 'border-slate-700 group-hover:border-slate-500'
+                              : 'border-border group-hover:border-slate-500'
                           }`}
                         />
-                        <div className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-slate-300 px-1.5 py-0.5 rounded">
+                        <div className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-foreground px-1.5 py-0.5 rounded">
                           {photo.date}
                         </div>
                         {isSlot1 && (
@@ -514,17 +514,17 @@ export default function PatientDetailPage() {
 
       {/* Nova Sessão Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border text-card-foreground max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nova Sessão - {patient.nome}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateSession} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">Atendimento</Label>
+              <Label className="text-foreground">Atendimento</Label>
               <select
                 value={selectedAppointment}
                 onChange={(e) => setSelectedAppointment(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 text-slate-100 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-border bg-muted text-card-foreground px-3 py-2 text-sm"
                 required
               >
                 <option value="">Selecione um atendimento</option>
@@ -537,12 +537,12 @@ export default function PatientDetailPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Protocolo</Label>
+              <Label className="text-foreground">Protocolo</Label>
               <Select value={selectedProtocol} onValueChange={setSelectedProtocol}>
-                <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectTrigger className="bg-muted border-border text-card-foreground">
                   <SelectValue placeholder="Selecione um protocolo" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectContent className="bg-muted border-border text-card-foreground">
                   <SelectItem value="">Nenhum</SelectItem>
                   {protocols?.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
@@ -552,7 +552,7 @@ export default function PatientDetailPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Anotações da Sessão</Label>
+              <Label className="text-foreground">Anotações da Sessão</Label>
               <div className="flex flex-wrap gap-2 mb-2">
                 <AudioRecorder
                   transcribeFn={(blob) => transcribeAi.transcribe(blob)}
@@ -603,13 +603,13 @@ export default function PatientDetailPage() {
                 onChange={(e) => setNotas(e.target.value)}
                 placeholder="Descreva o que foi feito, reações do paciente, etc."
                 rows={3}
-                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-slate-300">Notas de Evolução</Label>
+                <Label className="text-foreground">Notas de Evolução</Label>
                 <Button
                   type="button"
                   variant="ghost"
@@ -642,39 +642,39 @@ export default function PatientDetailPage() {
                 onChange={(e) => setNotasEvolucao(e.target.value)}
                 placeholder="Comparação com sessões anteriores, progresso observado..."
                 rows={3}
-                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Custo da Sessão (R$)</Label>
+              <Label className="text-foreground">Custo da Sessão (R$)</Label>
               <Input
                 type="number" step="0.01" min="0"
                 value={custo}
                 onChange={(e) => setCusto(e.target.value)}
                 placeholder="0,00"
-                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground"
               />
-              <p className="text-xs text-slate-500">Energia, material descartável, etc.</p>
+              <p className="text-xs text-muted-foreground">Energia, material descartável, etc.</p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Fotos / Vídeos</Label>
+              <Label className="text-foreground">Fotos / Vídeos</Label>
               <Input
                 type="file"
                 multiple
                 accept="image/*,video/*"
                 onChange={(e) => setFiles(Array.from(e.target.files || []))}
-                className="bg-slate-800 border-slate-700 text-slate-100 file:bg-indigo-600 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:text-xs file:font-medium"
+                className="bg-muted border-border text-card-foreground file:bg-indigo-600 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:text-xs file:font-medium"
               />
               {files.length > 0 && (
-                <p className="text-xs text-slate-500">{files.length} arquivo(s) selecionado(s)</p>
+                <p className="text-xs text-muted-foreground">{files.length} arquivo(s) selecionado(s)</p>
               )}
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
               <DialogClose asChild>
-                <Button type="button" variant="outline" className="border-slate-700 text-slate-300">
+                <Button type="button" variant="outline" className="border-border text-foreground">
                   Cancelar
                 </Button>
               </DialogClose>
@@ -689,17 +689,17 @@ export default function PatientDetailPage() {
       </Dialog>
 
       <Dialog open={previsaoOpen} onOpenChange={setPrevisaoOpen}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-lg">
+        <DialogContent className="bg-card border-border text-card-foreground max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-amber-400 flex items-center gap-2">
               <Sparkles className="h-5 w-5" /> Previsão de Sessões
             </DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-muted-foreground">
               Estimativa baseada no histórico de evolução do paciente.
             </DialogDescription>
           </DialogHeader>
-          <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
-            <p className="text-sm text-slate-200 whitespace-pre-wrap">{previsao}</p>
+          <div className="p-3 rounded-lg bg-muted/60 border border-border">
+            <p className="text-sm text-card-foreground whitespace-pre-wrap">{previsao}</p>
           </div>
         </DialogContent>
       </Dialog>

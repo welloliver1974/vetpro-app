@@ -57,7 +57,7 @@ export function AudioRecorder({ onTranscription, transcribeFn }: AudioRecorderPr
       size="sm"
       disabled={transcribing}
       onClick={recording ? stopRecording : startRecording}
-      className={`gap-2 border-slate-700 ${recording ? 'text-red-400 border-red-800 bg-red-950/30 animate-pulse' : 'text-slate-300'}`}
+      className={`gap-2 border-border ${recording ? 'text-red-400 border-red-800 bg-red-950/30 animate-pulse' : 'text-foreground'}`}
     >
       {transcribing ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />

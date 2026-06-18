@@ -45,7 +45,7 @@ export default function ClinicaPage() {
   if (isLoading) {
     return (
       <div className="p-4 md:p-8 flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -59,39 +59,39 @@ export default function ClinicaPage() {
           <Building2 className="h-7 w-7 text-indigo-500" />
           Clínica
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Gerencie sua clínica e convide outros veterinários
         </p>
       </div>
 
       {!clinic ? (
         /* Criar clínica */
-        <Card className="bg-slate-900 border-slate-800 max-w-lg">
+        <Card className="bg-card border-border max-w-lg">
           <CardHeader>
-            <CardTitle className="text-slate-200">Criar Clínica</CardTitle>
-            <CardDescription className="text-slate-500">
+            <CardTitle className="text-card-foreground">Criar Clínica</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Crie uma clínica para compartilhar dados com outros veterinários
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Nome da Clínica *</Label>
+                <Label className="text-foreground">Nome da Clínica *</Label>
                 <Input value={nome} onChange={(e) => setNome(e.target.value)} required
-                  className="bg-slate-800 border-slate-700 text-slate-100" />
+                  className="bg-muted border-border text-card-foreground" />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Endereço</Label>
+                <Label className="text-foreground">Endereço</Label>
                 <Input value={endereco} onChange={(e) => setEndereco(e.target.value)}
-                  className="bg-slate-800 border-slate-700 text-slate-100" />
+                  className="bg-muted border-border text-card-foreground" />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Telefone</Label>
+                <Label className="text-foreground">Telefone</Label>
                 <Input value={telefone} onChange={(e) => setTelefone(e.target.value)}
-                  className="bg-slate-800 border-slate-700 text-slate-100" />
+                  className="bg-muted border-border text-card-foreground" />
               </div>
               <Button type="submit" disabled={createClinic.isPending}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                className="bg-primary hover:bg-primary/90 text-white">
                 {createClinic.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 Criar Clínica
               </Button>
@@ -101,10 +101,10 @@ export default function ClinicaPage() {
       ) : (
         <div className="space-y-6 max-w-2xl">
           {/* Clinic Info */}
-          <Card className="bg-slate-900 border-slate-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-slate-200">{clinic.nome}</CardTitle>
-              <CardDescription className="text-slate-500">
+              <CardTitle className="text-card-foreground">{clinic.nome}</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 {clinic.endereco && `${clinic.endereco}${clinic.telefone ? ' | ' : ''}`}
                 {clinic.telefone}
               </CardDescription>
@@ -112,23 +112,23 @@ export default function ClinicaPage() {
           </Card>
 
           {/* Members */}
-          <Card className="bg-slate-900 border-slate-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-slate-400 flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Users className="h-4 w-4" /> Membros ({members?.length ?? 0})
               </CardTitle>
             </CardHeader>
             <CardContent>
               {!members?.length ? (
-                <p className="text-xs text-slate-500">Nenhum membro</p>
+                <p className="text-xs text-muted-foreground">Nenhum membro</p>
               ) : (
                 <div className="space-y-2">
                   {members.map((m) => (
                     <div key={m.id} className="flex items-center gap-3 text-sm">
-                      <div className="w-7 h-7 rounded-full bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xs font-bold">
+                      <div className="w-7 h-7 rounded-full bg-primary/20 text-indigo-400 flex items-center justify-center text-xs font-bold">
                         {(m.nome || '?')[0]}
                       </div>
-                      <span className="text-slate-200">{m.nome || 'Sem nome'}</span>
+                      <span className="text-card-foreground">{m.nome || 'Sem nome'}</span>
                     </div>
                   ))}
                 </div>
@@ -137,9 +137,9 @@ export default function ClinicaPage() {
           </Card>
 
           {/* Invites */}
-          <Card className="bg-slate-900 border-slate-800">
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-slate-400 flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Mail className="h-4 w-4" /> Convidar Veterinário
               </CardTitle>
             </CardHeader>
@@ -150,24 +150,24 @@ export default function ClinicaPage() {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="Email do veterinário..."
-                  className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 flex-1"
+                  className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground flex-1"
                   required
                 />
                 <Button type="submit" disabled={createInvite.isPending}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0">
+                  className="bg-primary hover:bg-primary/90 text-white shrink-0">
                   {createInvite.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Convidar'}
                 </Button>
               </form>
 
               {/* Invite history */}
               {invites && invites.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-slate-800">
-                  <p className="text-xs text-slate-500">Convites enviados:</p>
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <p className="text-xs text-muted-foreground">Convites enviados:</p>
                   {invites.map((inv) => {
                     const link = `${window.location.origin}/auth/join-clinic?token=${inv.token}`
                     return (
-                      <div key={inv.id} className="flex items-center justify-between text-xs bg-slate-800/50 rounded-lg p-2">
-                        <span className="text-slate-300">{inv.email}</span>
+                      <div key={inv.id} className="flex items-center justify-between text-xs bg-muted/50 rounded-lg p-2">
+                        <span className="text-foreground">{inv.email}</span>
                         <div className="flex items-center gap-2">
                           <span className={`px-1.5 py-0.5 rounded ${inv.usado ? 'bg-emerald-950 text-emerald-400' : 'bg-amber-950 text-amber-400'}`}>
                             {inv.usado ? 'Aceito' : 'Pendente'}

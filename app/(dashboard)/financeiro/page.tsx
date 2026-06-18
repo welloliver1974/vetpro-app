@@ -23,7 +23,7 @@ const methodColors: Record<string, string> = {
   pix: 'bg-green-950 text-green-400 border-green-800',
   cartao: 'bg-blue-950 text-blue-400 border-blue-800',
   dinheiro: 'bg-amber-950 text-amber-400 border-amber-800',
-  nao_informado: 'bg-slate-800 text-slate-400 border-slate-700',
+  nao_informado: 'bg-muted text-muted-foreground border-border',
 }
 
 export default function FinanceiroPage() {
@@ -62,57 +62,57 @@ export default function FinanceiroPage() {
     <div className="p-4 md:p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Financeiro</h1>
-        <p className="text-sm text-slate-400">Resumo de faturamento e histórico de pagamentos</p>
+        <p className="text-sm text-muted-foreground">Resumo de faturamento e histórico de pagamentos</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4 mb-8">
-        <Card className="bg-slate-900 border-slate-800">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Hoje</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Hoje</CardTitle>
             <DollarSign className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-100">
+            <div className="text-2xl font-bold text-card-foreground">
               R$ {today?.total.toFixed(2) ?? '0,00'}
             </div>
-            <p className="text-xs text-slate-500 mt-1">{today?.count ?? 0} atendimento(s)</p>
+            <p className="text-xs text-muted-foreground mt-1">{today?.count ?? 0} atendimento(s)</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-800">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Este Mês</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Este Mês</CardTitle>
             <CalendarDays className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-100">
+            <div className="text-2xl font-bold text-card-foreground">
               R$ {month?.total.toFixed(2) ?? '0,00'}
             </div>
-            <p className="text-xs text-slate-500 mt-1">{month?.count ?? 0} atendimento(s)</p>
+            <p className="text-xs text-muted-foreground mt-1">{month?.count ?? 0} atendimento(s)</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-800">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Total Geral</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Geral</CardTitle>
             <TrendingUp className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-100">
+            <div className="text-2xl font-bold text-card-foreground">
               R$ {totalGeral.toFixed(2)}
             </div>
-            <p className="text-xs text-slate-500 mt-1">{completed?.length ?? 0} atendimento(s)</p>
+            <p className="text-xs text-muted-foreground mt-1">{completed?.length ?? 0} atendimento(s)</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-800">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">Custos Totais</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Custos Totais</CardTitle>
             <Receipt className="h-4 w-4 text-rose-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-100">
+            <div className="text-2xl font-bold text-card-foreground">
               R$ {costs?.custo_total.toFixed(2) ?? '0,00'}
             </div>
             <p className="text-xs mt-1">
@@ -126,9 +126,9 @@ export default function FinanceiroPage() {
 
       {/* Payment Methods Today */}
       {today && today.methods && Object.keys(today.methods).length > 0 && (
-        <Card className="bg-slate-900 border-slate-800 mb-8">
+        <Card className="bg-card border-border mb-8">
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-400">Formas de Pagamento (Hoje)</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Formas de Pagamento (Hoje)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-3">
@@ -137,7 +137,7 @@ export default function FinanceiroPage() {
                   <Badge variant="outline" className={methodColors[method] || methodColors.nao_informado}>
                     {methodLabels[method] || method}
                   </Badge>
-                  <span className="text-sm text-slate-300">R$ {value.toFixed(2)}</span>
+                  <span className="text-sm text-foreground">R$ {value.toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -146,13 +146,13 @@ export default function FinanceiroPage() {
       )}
 
       {/* History Table */}
-      <Card className="bg-slate-900 border-slate-800">
+      <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-slate-400">Histórico de Atendimentos</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Histórico de Atendimentos</CardTitle>
             {completed && completed.length > 0 && (
               <Button variant="outline" size="xs" onClick={exportCSV}
-                className="border-slate-700 text-slate-400 gap-1.5">
+                className="border-border text-muted-foreground gap-1.5">
                 <Download className="h-3.5 w-3.5" /> Exportar CSV
               </Button>
             )}
@@ -161,34 +161,34 @@ export default function FinanceiroPage() {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-800 hover:bg-transparent">
-                <TableHead className="text-slate-400">Data</TableHead>
-                <TableHead className="text-slate-400">Paciente</TableHead>
-                <TableHead className="text-slate-400 hidden md:table-cell">Tipo</TableHead>
-                <TableHead className="text-slate-400">Pagamento</TableHead>
-                <TableHead className="text-slate-400 text-right">Valor</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground">Data</TableHead>
+                <TableHead className="text-muted-foreground">Paciente</TableHead>
+                <TableHead className="text-muted-foreground hidden md:table-cell">Tipo</TableHead>
+                <TableHead className="text-muted-foreground">Pagamento</TableHead>
+                <TableHead className="text-muted-foreground text-right">Valor</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-500" />
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : !completed?.length ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     Nenhum atendimento concluído
                   </TableCell>
                 </TableRow>
               ) : (
                 paginated.map((app) => (
-                  <TableRow key={app.id} className="border-slate-800 hover:bg-slate-800/50">
-                    <TableCell className="text-slate-300">
+                  <TableRow key={app.id} className="border-border hover:bg-muted/50">
+                    <TableCell className="text-foreground">
                       {format(parseISO(app.data), "dd/MM/yyyy 'às' HH:mm")}
                     </TableCell>
-                    <TableCell className="font-medium text-slate-200">
+                    <TableCell className="font-medium text-card-foreground">
                       {app.patients?.nome || '---'}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
@@ -206,10 +206,10 @@ export default function FinanceiroPage() {
                           {methodLabels[app.forma_pagamento]}
                         </Badge>
                       ) : (
-                        <span className="text-slate-600">-</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-medium text-slate-200">
+                    <TableCell className="text-right font-medium text-card-foreground">
                       R$ {Number(app.valor || 0).toFixed(2)}
                     </TableCell>
                   </TableRow>
@@ -223,23 +223,23 @@ export default function FinanceiroPage() {
       {/* Paginação */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Mostrando {(page - 1) * perPage + 1}-{Math.min(page * perPage, completed?.length || 0)} de {completed?.length || 0}
           </p>
           <div className="flex gap-1">
             <Button variant="outline" size="xs" disabled={page <= 1} onClick={() => setPage(page - 1)}
-              className="border-slate-700 text-slate-400">
+              className="border-border text-muted-foreground">
               Anterior
             </Button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <Button key={p} variant={p === page ? 'default' : 'outline'} size="xs"
                 onClick={() => setPage(p)}
-                className={p === page ? 'bg-indigo-600 text-white' : 'border-slate-700 text-slate-400'}>
+                className={p === page ? 'bg-primary text-white' : 'border-border text-muted-foreground'}>
                 {p}
               </Button>
             ))}
             <Button variant="outline" size="xs" disabled={page >= totalPages} onClick={() => setPage(page + 1)}
-              className="border-slate-700 text-slate-400">
+              className="border-border text-muted-foreground">
               Próximo
             </Button>
           </div>

@@ -82,32 +82,32 @@ export default function ConfiguracoesPage() {
           <Brain className="h-7 w-7 text-indigo-500" />
           Configurações de IA
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Escolha seu provedor de IA e insira sua chave de API. Os dados ficam salvos apenas no seu navegador.
         </p>
       </div>
 
       <div className="max-w-xl space-y-6">
         {/* Provedor */}
-        <Card className="bg-slate-900 border-slate-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-slate-200 text-lg">Provedor</CardTitle>
-            <CardDescription className="text-slate-500">
+            <CardTitle className="text-card-foreground text-lg">Provedor</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Selecione o serviço de IA que deseja utilizar
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">Provedor</Label>
+              <Label className="text-foreground">Provedor</Label>
               <Select value={provider} onValueChange={(v) => {
                 setProvider(v as ProviderId)
                 const models = getChatModels(v as ProviderId)
                 if (models.length > 0) setChatModel(models[0].id)
               }}>
-                <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectTrigger className="bg-muted border-border text-card-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectContent className="bg-muted border-border text-card-foreground">
                   {PROVIDERS.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
                   ))}
@@ -116,29 +116,29 @@ export default function ConfiguracoesPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Chave de API</Label>
+              <Label className="text-foreground">Chave de API</Label>
               <div className="relative">
-                <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder={`sk-... (${currentProvider?.label})`}
-                  className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 pl-10"
+                  className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground pl-10"
                 />
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Sua chave fica armazenada apenas no navegador ({currentProvider?.baseUrl})
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Modelo de Chat</Label>
+              <Label className="text-foreground">Modelo de Chat</Label>
               <Select value={chatModel} onValueChange={setChatModel}>
-                <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectTrigger className="bg-muted border-border text-card-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectContent className="bg-muted border-border text-card-foreground">
                   {availableModels.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       {m.label}
@@ -148,7 +148,7 @@ export default function ConfiguracoesPage() {
                 </SelectContent>
               </Select>
               {chatModel && (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   {availableModels.find((m) => m.id === chatModel)?.capabilities.vision
                     ? 'Suporta análise de imagens'
                     : 'Apenas texto'}
@@ -157,7 +157,7 @@ export default function ConfiguracoesPage() {
             </div>
 
             {canTranscribe && (
-              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+              <div className="bg-muted/50 rounded-lg p-3 border border-border">
                 <p className="text-xs text-emerald-400 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" />
                   Transcrição de áudio disponível para este provedor
@@ -166,14 +166,14 @@ export default function ConfiguracoesPage() {
             )}
 
             <div className="flex items-center gap-3 pt-2">
-              <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+              <Button onClick={handleSave} className="bg-primary hover:bg-primary/90 text-white gap-2">
                 <Save className="h-4 w-4" /> Salvar
               </Button>
               <Button
                 variant="outline"
                 onClick={handleTest}
                 disabled={testing || !apiKey}
-                className="border-slate-700 text-slate-300 gap-2"
+                className="border-border text-foreground gap-2"
               >
                 {testing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -185,7 +185,7 @@ export default function ConfiguracoesPage() {
                 Testar Conexão
               </Button>
               {config && (
-                <Button variant="ghost" onClick={handleClear} className="text-slate-500 hover:text-red-400 gap-2">
+                <Button variant="ghost" onClick={handleClear} className="text-muted-foreground hover:text-red-400 gap-2">
                   <Trash2 className="h-4 w-4" /> Limpar
                 </Button>
               )}
@@ -194,20 +194,20 @@ export default function ConfiguracoesPage() {
         </Card>
 
         {/* Info */}
-        <Card className="bg-slate-900 border-slate-800">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-slate-200 text-sm">Sobre</CardTitle>
+            <CardTitle className="text-card-foreground text-sm">Sobre</CardTitle>
           </CardHeader>
-          <CardContent className="text-xs text-slate-500 space-y-2">
+          <CardContent className="text-xs text-muted-foreground space-y-2">
             <p>
               As chamadas de IA são feitas diretamente do seu navegador para o provedor escolhido.
               Nenhum dado passa por servidores intermediários.
             </p>
             <p>
-              <strong className="text-slate-400">Transcrição de áudio:</strong> disponível apenas via Groq (Whisper Large V3) e OpenAI (Whisper).
+              <strong className="text-muted-foreground">Transcrição de áudio:</strong> disponível apenas via Groq (Whisper Large V3) e OpenAI (Whisper).
             </p>
             <p>
-              <strong className="text-slate-400">Análise de imagens:</strong> requer modelo com suporte a visão (👁️).
+              <strong className="text-muted-foreground">Análise de imagens:</strong> requer modelo com suporte a visão (👁️).
             </p>
           </CardContent>
         </Card>

@@ -71,49 +71,49 @@ export default function EquipmentsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Equipamentos</h1>
-          <p className="text-sm text-slate-400">Gerencie seus aparelhos de fisioterapia</p>
+          <p className="text-sm text-muted-foreground">Gerencie seus aparelhos de fisioterapia</p>
         </div>
-        <Button onClick={openCreate} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+        <Button onClick={openCreate} className="bg-primary hover:bg-primary/90 text-white gap-2">
           <Plus className="h-4 w-4" /> Novo Equipamento
         </Button>
       </div>
 
-      <Card className="bg-slate-900 border-slate-800">
+      <Card className="bg-card border-border">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-800 hover:bg-transparent">
-                <TableHead className="text-slate-400">Nome</TableHead>
-                <TableHead className="text-slate-400 hidden md:table-cell">Modelo</TableHead>
-                <TableHead className="text-slate-400 hidden md:table-cell">Última Manutenção</TableHead>
-                <TableHead className="text-slate-400 text-right">Ações</TableHead>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground">Nome</TableHead>
+                <TableHead className="text-muted-foreground hidden md:table-cell">Modelo</TableHead>
+                <TableHead className="text-muted-foreground hidden md:table-cell">Última Manutenção</TableHead>
+                <TableHead className="text-muted-foreground text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
               ) : !equipments?.length ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     <Wrench className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     Nenhum equipamento cadastrado
                   </TableCell>
                 </TableRow>
               ) : (
                 equipments.map((eq) => (
-                  <TableRow key={eq.id} className="border-slate-800 hover:bg-slate-800/50">
-                    <TableCell className="font-medium text-slate-200">
+                  <TableRow key={eq.id} className="border-border hover:bg-muted/50">
+                    <TableCell className="font-medium text-card-foreground">
                       <div className="flex items-center gap-2">
                         <Wrench className="h-4 w-4 text-indigo-400" />
                         {eq.nome}
                       </div>
                     </TableCell>
-                    <TableCell className="text-slate-400 hidden md:table-cell">{eq.modelo || '-'}</TableCell>
-                    <TableCell className="text-slate-400 hidden md:table-cell">
+                    <TableCell className="text-muted-foreground hidden md:table-cell">{eq.modelo || '-'}</TableCell>
+                    <TableCell className="text-muted-foreground hidden md:table-cell">
                       {eq.ultima_manutencao ? (
                         <div className="flex items-center gap-1">
                           <CalendarDays className="h-3 w-3" />
@@ -125,12 +125,12 @@ export default function EquipmentsPage() {
                       <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon-xs"
                           onClick={() => openEdit(eq)}
-                          className="text-slate-400 hover:text-indigo-400">
+                          className="text-muted-foreground hover:text-indigo-400">
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon-xs"
                           onClick={() => handleDelete(eq.id, eq.nome)}
-                          className="text-slate-400 hover:text-red-400">
+                          className="text-muted-foreground hover:text-red-400">
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -144,36 +144,36 @@ export default function EquipmentsPage() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+        <DialogContent className="bg-card border-border text-card-foreground">
           <DialogHeader>
             <DialogTitle>{editing ? 'Editar Equipamento' : 'Novo Equipamento'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">Nome *</Label>
+              <Label className="text-foreground">Nome *</Label>
               <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })}
                 required placeholder="Ex: Laserterapia 808nm"
-                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500" />
+                className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground" />
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-300">Modelo</Label>
+              <Label className="text-foreground">Modelo</Label>
               <Input value={form.modelo} onChange={(e) => setForm({ ...form, modelo: e.target.value })}
                 placeholder="Ex: DMC Laser Pulse"
-                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500" />
+                className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground" />
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-300">Última Manutenção</Label>
+              <Label className="text-foreground">Última Manutenção</Label>
               <Input type="date" value={form.ultima_manutencao}
                 onChange={(e) => setForm({ ...form, ultima_manutencao: e.target.value })}
-                className="bg-slate-800 border-slate-700 text-slate-100" />
+                className="bg-muted border-border text-card-foreground" />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <DialogClose asChild>
-                <Button type="button" variant="outline" className="border-slate-700 text-slate-300">
+                <Button type="button" variant="outline" className="border-border text-foreground">
                   Cancelar
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={isPending} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              <Button type="submit" disabled={isPending} className="bg-primary hover:bg-primary/90 text-white">
                 {isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 {editing ? 'Salvar' : 'Cadastrar'}
               </Button>

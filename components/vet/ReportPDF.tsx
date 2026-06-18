@@ -54,7 +54,7 @@ export function ReportPDF({ patient, sessions, assinaturaUrl }: Props) {
   return (
     <>
       <Button onClick={generatePDF} disabled={loading}
-        className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 gap-2"
+        className="bg-muted hover:bg-muted text-card-foreground border border-border gap-2"
       >
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" />

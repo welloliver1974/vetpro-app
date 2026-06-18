@@ -117,6 +117,8 @@ Funciona em notebook, tablet e celular.
 - Toggle Claro/Escuro no Header (via `next-themes`)
 - Tema escuro: azul noturno (navy)
 - Tema claro: azul clarinho (sky)
+- **Sistema de Design Tokens**: cores hardcoded (`text-slate-*`, `bg-slate-*`, `border-slate-*`) substituídas por variáveis CSS (`text-muted-foreground`, `bg-card`, `bg-muted`, `border-border`, `bg-primary`) em todo o app (17 arquivos, ~340 substituições)
+- Botões `bg-indigo-600` migrados para `bg-primary`, permitindo troca de cor primária via CSS
 
 ---
 

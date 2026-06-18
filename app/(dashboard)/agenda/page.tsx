@@ -158,22 +158,22 @@ export default function AgendaPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Agenda</h1>
-          <p className="text-sm text-slate-400">Visualização semanal</p>
+          <p className="text-sm text-muted-foreground">Visualização semanal</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon-sm" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}
-            className="border-slate-700 text-slate-400">
+            className="border-border text-muted-foreground">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm font-medium text-slate-200 min-w-[140px] text-center">
+          <span className="text-sm font-medium text-card-foreground min-w-[140px] text-center">
             {format(weekStart, "d 'de' MMM", { locale: ptBR })} - {format(addDays(weekStart, 6), "d 'de' MMM", { locale: ptBR })}
           </span>
           <Button variant="outline" size="icon-sm" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}
-            className="border-slate-700 text-slate-400">
+            className="border-border text-muted-foreground">
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}
-            className="border-slate-700 text-slate-400 ml-2">
+            className="border-border text-muted-foreground ml-2">
             Hoje
           </Button>
           <Button
@@ -183,7 +183,7 @@ export default function AgendaPage() {
               const ok = await notif.requestPermission()
               setNotifGranted(ok ? 'granted' : 'denied')
             }}
-            className={`ml-1 ${notifGranted === 'granted' ? 'text-emerald-400' : 'text-slate-500'}`}
+            className={`ml-1 ${notifGranted === 'granted' ? 'text-emerald-400' : 'text-muted-foreground'}`}
             title={notifGranted === 'granted' ? 'Notificações ativas' : 'Ativar notificações'}
           >
             {notifGranted === 'granted' ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
@@ -193,13 +193,13 @@ export default function AgendaPage() {
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Filter className="h-3.5 w-3.5" /> Filtros:
         </div>
         <select
           value={filterTipo}
           onChange={(e) => setFilterTipo(e.target.value)}
-          className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5"
+          className="bg-muted border border-border text-foreground text-xs rounded-lg px-2 py-1.5"
         >
           <option value="">Todos os tipos</option>
           <option value="fisio">Fisioterapia</option>
@@ -209,7 +209,7 @@ export default function AgendaPage() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5"
+          className="bg-muted border border-border text-foreground text-xs rounded-lg px-2 py-1.5"
         >
           <option value="">Todos os status</option>
           <option value="agendado">Agendado</option>
@@ -221,7 +221,7 @@ export default function AgendaPage() {
           value={filterPaciente}
           onChange={(e) => setFilterPaciente(e.target.value)}
           placeholder="Buscar paciente..."
-          className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 w-40 placeholder:text-slate-600"
+          className="bg-muted border border-border text-foreground text-xs rounded-lg px-2 py-1.5 w-40 placeholder:text-muted-foreground"
         />
         {(filterTipo || filterStatus || filterPaciente) && (
           <button
@@ -241,15 +241,15 @@ export default function AgendaPage() {
           return (
             <Card
               key={day.toISOString()}
-              className={`bg-slate-900 border-slate-800 min-h-[120px] cursor-pointer hover:border-slate-600 transition-colors ${isToday ? 'ring-1 ring-indigo-500/50' : ''}`}
+              className={`bg-card border-border min-h-[120px] cursor-pointer hover:border-border transition-colors ${isToday ? 'ring-1 ring-indigo-500/50' : ''}`}
               onClick={() => openCreateForDate(day)}
             >
               <CardContent className="p-2">
                 <div className="text-center mb-2">
-                  <div className="text-[10px] uppercase text-slate-500">
+                  <div className="text-[10px] uppercase text-muted-foreground">
                     {format(day, 'EEE', { locale: ptBR })}
                   </div>
-                  <div className={`text-lg font-bold ${isToday ? 'text-indigo-400' : 'text-slate-200'}`}>
+                  <div className={`text-lg font-bold ${isToday ? 'text-indigo-400' : 'text-card-foreground'}`}>
                     {format(day, 'd')}
                   </div>
                 </div>
@@ -263,7 +263,7 @@ export default function AgendaPage() {
                     </div>
                   ))}
                   {dayApps.length > 3 && (
-                    <div className="text-[10px] text-slate-500 text-center">
+                    <div className="text-[10px] text-muted-foreground text-center">
                       +{dayApps.length - 3} mais
                     </div>
                   )}
@@ -277,9 +277,9 @@ export default function AgendaPage() {
       {/* Lista da Semana */}
       {weekAppointments.length > 0 ? (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-200">Atendimentos da Semana</h2>
+          <h2 className="text-lg font-semibold text-card-foreground">Atendimentos da Semana</h2>
           {weekAppointments.map((app) => (
-            <Card key={app.id} className={`bg-slate-900 border-l-4 ${app.status === 'concluido' ? 'border-l-slate-700 opacity-60' : app.tipo === 'fisio' ? 'border-l-emerald-500' : app.tipo === 'externo' ? 'border-l-amber-500' : 'border-l-blue-500'}`}>
+            <Card key={app.id} className={`bg-card border-l-4 ${app.status === 'concluido' ? 'border-l-border opacity-60' : app.tipo === 'fisio' ? 'border-l-emerald-500' : app.tipo === 'externo' ? 'border-l-amber-500' : 'border-l-blue-500'}`}>
               <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                 <div className="flex items-center gap-4">
                   <div className="text-lg font-bold text-indigo-400 min-w-[60px]">
@@ -287,13 +287,13 @@ export default function AgendaPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-200">{app.patients?.nome || '---'}</span>
+                      <span className="font-semibold text-card-foreground">{app.patients?.nome || '---'}</span>
                       <Badge variant="outline" className={`text-[10px] ${app.tipo === 'fisio' ? 'border-emerald-800 text-emerald-400' : app.tipo === 'externo' ? 'border-amber-800 text-amber-400' : 'border-blue-800 text-blue-400'}`}>
                         {typeLabels[app.tipo]}
                       </Badge>
                     </div>
                     {app.tipo === 'externo' && (
-                      <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                         <MapPin className="h-3 w-3" />
                         {app.patients?.endereco ? (
                           <a
@@ -308,7 +308,7 @@ export default function AgendaPage() {
                       </div>
                     )}
                     {app.valor && (
-                      <div className="text-xs text-slate-500 mt-1">
+                      <div className="text-xs text-muted-foreground mt-1">
                         R$ {Number(app.valor).toFixed(2)}
                         {app.forma_pagamento && ` • ${app.forma_pagamento === 'pix' ? 'Pix' : app.forma_pagamento === 'cartao' ? 'Cartão' : 'Dinheiro'}`}
                       </div>
@@ -324,17 +324,17 @@ export default function AgendaPage() {
                       </Button>
                       <Button variant="ghost" size="icon-xs"
                         onClick={() => handleDelete(app.id)}
-                        className="text-slate-500 hover:text-red-400">
+                        className="text-muted-foreground hover:text-red-400">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </>
                   )}
                   {app.status === 'concluido' && (
                     <>
-                      <Badge className="bg-slate-800 text-slate-400 border-slate-700">Concluído</Badge>
+                      <Badge className="bg-muted text-muted-foreground border-border">Concluído</Badge>
                       <Button variant="ghost" size="icon-xs"
                         onClick={() => handleDelete(app.id)}
-                        className="text-slate-500 hover:text-red-400">
+                        className="text-muted-foreground hover:text-red-400">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </>
@@ -345,31 +345,31 @@ export default function AgendaPage() {
           ))}
         </div>
       ) : !isLoading && (
-        <div className="text-center py-12 text-slate-500">
+        <div className="text-center py-12 text-muted-foreground">
           Nenhum atendimento nesta semana
         </div>
       )}
 
       {isLoading && (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+        <DialogContent className="bg-card border-border text-card-foreground">
           <DialogHeader>
             <DialogTitle>Novo Atendimento</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">Paciente</Label>
+              <Label className="text-foreground">Paciente</Label>
               <Select value={form.paciente_id} onValueChange={(v) => setForm({ ...form, paciente_id: v })}>
-                <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectTrigger className="bg-muted border-border text-card-foreground">
                   <SelectValue placeholder="Selecione um paciente" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectContent className="bg-muted border-border text-card-foreground">
                   {patients?.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
                   ))}
@@ -378,22 +378,22 @@ export default function AgendaPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Data</Label>
-                <Input type="date" value={selectedDate} disabled className="bg-slate-800 border-slate-700 text-slate-100" />
+                <Label className="text-foreground">Data</Label>
+                <Input type="date" value={selectedDate} disabled className="bg-muted border-border text-card-foreground" />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Horário</Label>
+                <Label className="text-foreground">Horário</Label>
                 <Input type="time" value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })}
-                  className="bg-slate-800 border-slate-700 text-slate-100" />
+                  className="bg-muted border-border text-card-foreground" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-300">Tipo</Label>
+              <Label className="text-foreground">Tipo</Label>
               <Select value={form.tipo} onValueChange={(v) => setForm({ ...form, tipo: v as 'fisio' | 'clinico' | 'externo' })}>
-                <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectTrigger className="bg-muted border-border text-card-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
+                <SelectContent className="bg-muted border-border text-card-foreground">
                   <SelectItem value="clinico">Clínico</SelectItem>
                   <SelectItem value="fisio">Fisioterapia</SelectItem>
                   <SelectItem value="externo">Externo (Domiciliar)</SelectItem>
@@ -401,16 +401,16 @@ export default function AgendaPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-300">Valor (R$)</Label>
+              <Label className="text-foreground">Valor (R$)</Label>
               <Input type="number" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })}
-                className="bg-slate-800 border-slate-700 text-slate-100" />
+                className="bg-muted border-border text-card-foreground" />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <DialogClose asChild>
-                <Button type="button" variant="outline" className="border-slate-700 text-slate-300">Cancelar</Button>
+                <Button type="button" variant="outline" className="border-border text-foreground">Cancelar</Button>
               </DialogClose>
               <Button type="submit" disabled={createAppointment.isPending}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                className="bg-primary hover:bg-primary/90 text-white">
                 {createAppointment.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 Agendar
               </Button>
@@ -421,20 +421,20 @@ export default function AgendaPage() {
 
       {/* Finalizar Dialog */}
       <Dialog open={finishOpen} onOpenChange={setFinishOpen}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+        <DialogContent className="bg-card border-border text-card-foreground">
           <DialogHeader>
             <DialogTitle>Finalizar Atendimento</DialogTitle>
           </DialogHeader>
           {finishingApp && (
             <div className="space-y-4">
               {/* Resumo */}
-              <div className="bg-slate-800 rounded-lg p-4 space-y-2">
+              <div className="bg-muted rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Paciente</span>
-                  <span className="text-slate-200 font-medium">{finishingApp.patients?.nome || '---'}</span>
+                  <span className="text-muted-foreground">Paciente</span>
+                  <span className="text-card-foreground font-medium">{finishingApp.patients?.nome || '---'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Tipo</span>
+                  <span className="text-muted-foreground">Tipo</span>
                   <Badge variant="outline" className={
                     finishingApp.tipo === 'fisio' ? 'border-emerald-800 text-emerald-400' :
                     finishingApp.tipo === 'externo' ? 'border-amber-800 text-amber-400' :
@@ -442,21 +442,21 @@ export default function AgendaPage() {
                   }>{typeLabels[finishingApp.tipo]}</Badge>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Horário</span>
-                  <span className="text-slate-200">{format(parseISO(finishingApp.data), "dd/MM/yyyy 'às' HH:mm")}</span>
+                  <span className="text-muted-foreground">Horário</span>
+                  <span className="text-card-foreground">{format(parseISO(finishingApp.data), "dd/MM/yyyy 'às' HH:mm")}</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-300">Valor Cobrado (R$)</Label>
+                <Label className="text-foreground">Valor Cobrado (R$)</Label>
                 <Input type="number" step="0.01" value={finishValor}
                   onChange={(e) => setFinishValor(e.target.value)}
                   placeholder="0,00"
-                  className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 text-lg font-bold" />
+                  className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground text-lg font-bold" />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-300">Forma de Pagamento</Label>
+                <Label className="text-foreground">Forma de Pagamento</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { value: 'pix', label: 'Pix', icon: '💳' },
@@ -470,7 +470,7 @@ export default function AgendaPage() {
                       className={`p-3 rounded-lg border text-center transition-all ${
                         finishPayment === option.value
                           ? 'border-indigo-500 bg-indigo-600/20 text-indigo-400'
-                          : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600'
+                          : 'border-border bg-muted text-muted-foreground hover:border-border'
                       }`}
                     >
                       <div className="text-lg mb-1">{option.icon}</div>
@@ -488,7 +488,7 @@ export default function AgendaPage() {
 
               <div className="flex justify-end gap-3 pt-2">
                 <DialogClose asChild>
-                  <Button type="button" variant="outline" className="border-slate-700 text-slate-300">
+                  <Button type="button" variant="outline" className="border-border text-foreground">
                     Cancelar
                   </Button>
                 </DialogClose>
