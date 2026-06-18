@@ -12,6 +12,7 @@ import {
   PawPrint,
   Menu,
   X,
+  Settings,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,10 @@ const navItems = [
   { href: '/equipamentos', label: 'Equipamentos', icon: Package },
   { href: '/protocolos', label: 'Protocolos', icon: FileText },
   { href: '/financeiro', label: 'Financeiro', icon: DollarSign },
+]
+
+const bottomItems = [
+  { href: '/configuracoes', label: 'Configurações', icon: Settings },
 ]
 
 export function Sidebar() {
@@ -85,6 +90,30 @@ export function Sidebar() {
             )
           })}
         </nav>
+
+        {/* Bottom */}
+        <div className="p-4 border-t border-slate-800">
+          {bottomItems.map((item) => {
+            const Icon = item.icon
+            const active = pathname === item.href
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-indigo-600/10 text-indigo-400'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </div>
       </aside>
     </>
   )

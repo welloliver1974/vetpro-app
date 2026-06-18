@@ -1,0 +1,217 @@
+'use client'
+
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import { Toaster, toast } from 'sonner'
+import {
+  PROVIDERS, getChatModels, type ProviderId, type AiConfig,
+} from '@/lib/ai/config'
+import { testConnection } from '@/lib/ai'
+import { useAiConfig } from '@/hooks/useAi'
+import { Loader2, CheckCircle2, XCircle, Brain, Key, Save, Trash2 } from 'lucide-react'
+
+export default function ConfiguracoesPage() {
+  const { config, save, clear } = useAiConfig()
+
+  const [provider, setProvider] = useState<ProviderId>(config?.provider || 'groq')
+  const [apiKey, setApiKey] = useState(config?.apiKey || '')
+  const [chatModel, setChatModel] = useState(config?.chatModel || '')
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<'success' | 'fail' | null>(null)
+
+  const availableModels = getChatModels(provider)
+  const currentProvider = PROVIDERS.find((p) => p.id === provider)
+  const canTranscribe = currentProvider?.supportsTranscription ?? false
+
+  function handleSave() {
+    if (!apiKey.trim()) {
+      toast.error('Informe a chave de API')
+      return
+    }
+    if (!chatModel) {
+      toast.error('Selecione um modelo')
+      return
+    }
+    save({
+      provider,
+      apiKey: apiKey.trim(),
+      chatModel,
+      transcriptionModel: 'whisper-large-v3',
+    })
+    toast.success('Configuração salva!')
+  }
+
+  async function handleTest() {
+    const cfg: AiConfig = { provider, apiKey: apiKey.trim(), chatModel, transcriptionModel: 'whisper-large-v3' }
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const ok = await testConnection(cfg)
+      setTestResult(ok ? 'success' : 'fail')
+      if (ok) toast.success('Conexão OK!')
+      else toast.error('Falha na conexão')
+    } catch {
+      setTestResult('fail')
+      toast.error('Erro ao testar conexão')
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  function handleClear() {
+    clear()
+    setProvider('groq')
+    setApiKey('')
+    setChatModel('')
+    setTestResult(null)
+    toast.success('Configuração removida')
+  }
+
+  return (
+    <div className="p-4 md:p-8">
+      <Toaster richColors position="top-center" />
+
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+          <Brain className="h-7 w-7 text-indigo-500" />
+          Configurações de IA
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Escolha seu provedor de IA e insira sua chave de API. Os dados ficam salvos apenas no seu navegador.
+        </p>
+      </div>
+
+      <div className="max-w-xl space-y-6">
+        {/* Provedor */}
+        <Card className="bg-slate-900 border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-slate-200 text-lg">Provedor</CardTitle>
+            <CardDescription className="text-slate-500">
+              Selecione o serviço de IA que deseja utilizar
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Provedor</Label>
+              <Select value={provider} onValueChange={(v) => {
+                setProvider(v as ProviderId)
+                const models = getChatModels(v as ProviderId)
+                if (models.length > 0) setChatModel(models[0].id)
+              }}>
+                <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
+                  {PROVIDERS.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-300">Chave de API</Label>
+              <div className="relative">
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={`sk-... (${currentProvider?.label})`}
+                  className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 pl-10"
+                />
+              </div>
+              <p className="text-xs text-slate-500">
+                Sua chave fica armazenada apenas no navegador ({currentProvider?.baseUrl})
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-slate-300">Modelo de Chat</Label>
+              <Select value={chatModel} onValueChange={setChatModel}>
+                <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
+                  {availableModels.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.label}
+                      {m.capabilities.vision && ' 👁️'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {chatModel && (
+                <p className="text-xs text-slate-500">
+                  {availableModels.find((m) => m.id === chatModel)?.capabilities.vision
+                    ? 'Suporta análise de imagens'
+                    : 'Apenas texto'}
+                </p>
+              )}
+            </div>
+
+            {canTranscribe && (
+              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+                <p className="text-xs text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Transcrição de áudio disponível para este provedor
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                <Save className="h-4 w-4" /> Salvar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleTest}
+                disabled={testing || !apiKey}
+                className="border-slate-700 text-slate-300 gap-2"
+              >
+                {testing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : testResult === 'success' ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                ) : testResult === 'fail' ? (
+                  <XCircle className="h-4 w-4 text-red-400" />
+                ) : null}
+                Testar Conexão
+              </Button>
+              {config && (
+                <Button variant="ghost" onClick={handleClear} className="text-slate-500 hover:text-red-400 gap-2">
+                  <Trash2 className="h-4 w-4" /> Limpar
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Info */}
+        <Card className="bg-slate-900 border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-slate-200 text-sm">Sobre</CardTitle>
+          </CardHeader>
+          <CardContent className="text-xs text-slate-500 space-y-2">
+            <p>
+              As chamadas de IA são feitas diretamente do seu navegador para o provedor escolhido.
+              Nenhum dado passa por servidores intermediários.
+            </p>
+            <p>
+              <strong className="text-slate-400">Transcrição de áudio:</strong> disponível apenas via Groq (Whisper Large V3) e OpenAI (Whisper).
+            </p>
+            <p>
+              <strong className="text-slate-400">Análise de imagens:</strong> requer modelo com suporte a visão (👁️).
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

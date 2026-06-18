@@ -8,6 +8,8 @@ import { usePatients } from '@/hooks/usePatients'
 import { useSessionsByPatient, useCreateSession, useUpdateSession, uploadFile } from '@/hooks/useSessions'
 import { useAppointments } from '@/hooks/useAppointments'
 import { useProtocols } from '@/hooks/useProtocols'
+import { useChat, useTranscription } from '@/hooks/useAi'
+import { AudioRecorder } from '@/components/vet/AudioRecorder'
 import { ReportPDF } from '@/components/vet/ReportPDF'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,7 +28,7 @@ import {
 } from '@/components/ui/tabs'
 import { Toaster, toast } from 'sonner'
 import {
-  Loader2, Plus, ArrowLeft,
+  Loader2, Plus, ArrowLeft, Sparkles,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -40,6 +42,8 @@ export default function PatientDetailPage() {
   const { data: sessions, isLoading } = useSessionsByPatient(patientId)
   const createSession = useCreateSession()
   const updateSession = useUpdateSession()
+  const chatAi = useChat()
+  const transcribeAi = useTranscription()
 
   const { data: protocols } = useProtocols()
   const patientAppointments = appointments?.filter((a) => a.paciente_id === patientId) ?? []
@@ -125,6 +129,45 @@ export default function PatientDetailPage() {
           </div>
           <div className="flex gap-2">
             <ReportPDF patient={patient} sessions={sessions || []} />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={chatAi.loading || !sessions?.length}
+              onClick={async () => {
+                const evolNotes = sessions
+                  ?.filter((s) => s.notas_evolucao)
+                  .slice(0, 10)
+                  .map((s, i) => `Sessão ${i + 1}: ${s.notas_evolucao}`)
+                  .join('\n\n')
+                if (!evolNotes) {
+                  toast.error('Nenhuma nota de evolução para gerar relatório')
+                  return
+                }
+                try {
+                  const report = await chatAi.generate(
+                    `Gere um relatório de evolução para o tutor do paciente veterinário abaixo:\n\n` +
+                    `Paciente: ${patient.nome} (${patient.especie || ''} ${patient.raca || ''})\n` +
+                    `Tutor: ${patient.tutor_nome || '---'}\n` +
+                    `Total de sessões: ${sessions?.length || 0}\n\n` +
+                    `Histórico de evolução:\n${evolNotes}\n\n` +
+                    `Escreva em linguagem clara para o tutor, destacando progressos e próximos passos.`
+                  )
+                  toast.success('Relatório gerado!', { duration: 8000 })
+                  setNotasEvolucao(report)
+                  setDialogOpen(true)
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : 'Erro ao gerar relatório')
+                }
+              }}
+              className="border-indigo-700 text-indigo-400 hover:bg-indigo-950/30 gap-2"
+            >
+              {chatAi.loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              Relatório com IA
+            </Button>
             <Button onClick={() => setDialogOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
               <Plus className="h-4 w-4" /> Nova Sessão
             </Button>
@@ -292,6 +335,12 @@ export default function PatientDetailPage() {
 
             <div className="space-y-2">
               <Label className="text-slate-300">Anotações da Sessão</Label>
+              <div className="flex gap-2 mb-2">
+                <AudioRecorder
+                  transcribeFn={(blob) => transcribeAi.transcribe(blob)}
+                  onTranscription={(text) => setNotas((prev) => prev + text)}
+                />
+              </div>
               <Textarea
                 value={notas}
                 onChange={(e) => setNotas(e.target.value)}
@@ -302,7 +351,35 @@ export default function PatientDetailPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-300">Notas de Evolução</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-slate-300">Notas de Evolução</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  disabled={chatAi.loading || !notas}
+                  onClick={async () => {
+                    if (!notas) return
+                    try {
+                      const evol = await chatAi.generate(
+                        `Com base nestas anotações de sessão de fisioterapia veterinária, escreva notas de evolução profissionais:\n\n${notas}`,
+                        'Você é um fisioterapeuta veterinário especialista. Gere notas de evolução concisas e técnicas.'
+                      )
+                      setNotasEvolucao(evol)
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : 'Erro ao gerar evolução')
+                    }
+                  }}
+                  className="text-indigo-400 hover:text-indigo-300 gap-1"
+                >
+                  {chatAi.loading ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                  Sugerir com IA
+                </Button>
+              </div>
               <Textarea
                 value={notasEvolucao}
                 onChange={(e) => setNotasEvolucao(e.target.value)}
