@@ -29,12 +29,12 @@ export default function PatientsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Patient | null>(null)
   const [form, setForm] = useState<PatientInput>({
-    nome: '', especie: '', raca: '', tutor_nome: '', tutor_contato: '',
+    nome: '', especie: '', raca: '', tutor_nome: '', tutor_contato: '', endereco: '',
   })
 
   function openCreate() {
     setEditing(null)
-    setForm({ nome: '', especie: '', raca: '', tutor_nome: '', tutor_contato: '' })
+    setForm({ nome: '', especie: '', raca: '', tutor_nome: '', tutor_contato: '', endereco: '' })
     setDialogOpen(true)
   }
 
@@ -46,6 +46,7 @@ export default function PatientsPage() {
       raca: patient.raca || '',
       tutor_nome: patient.tutor_nome || '',
       tutor_contato: patient.tutor_contato || '',
+      endereco: patient.endereco || '',
     })
     setDialogOpen(true)
   }
@@ -253,6 +254,15 @@ export default function PatientsPage() {
                 value={form.tutor_contato}
                 onChange={(e) => setForm({ ...form, tutor_contato: e.target.value })}
                 className="bg-slate-800 border-slate-700 text-slate-100"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Endereço (para atendimento externo)</Label>
+              <Input
+                value={form.endereco}
+                onChange={(e) => setForm({ ...form, endereco: e.target.value })}
+                placeholder="Rua, número, bairro, cidade..."
+                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
               />
             </div>
             <div className="flex justify-end gap-3 pt-2">

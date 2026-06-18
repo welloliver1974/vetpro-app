@@ -13,6 +13,7 @@ export type Patient = {
   raca: string | null
   tutor_nome: string | null
   tutor_contato: string | null
+  endereco: string | null
   created_at: string
 }
 
@@ -22,6 +23,7 @@ export type PatientInput = {
   raca?: string
   tutor_nome?: string
   tutor_contato?: string
+  endereco?: string
 }
 
 async function fetchPatients(): Promise<Patient[]> {

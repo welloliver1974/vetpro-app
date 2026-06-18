@@ -131,6 +131,19 @@ export default function PatientDetailPage() {
               {patient.tutor_nome && ` | Tutor: ${patient.tutor_nome}`}
               {patient.tutor_contato && ` | ${patient.tutor_contato}`}
             </p>
+            {patient.endereco && (
+              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                📍 {patient.endereco}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(patient.endereco)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-indigo-400 hover:text-indigo-300 ml-1"
+                >
+                  [Ver no Maps]
+                </a>
+              </p>
+            )}
           </div>
           <div className="flex gap-2">
             <ReportPDF patient={patient} sessions={sessions || []} />

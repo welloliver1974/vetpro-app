@@ -15,7 +15,7 @@ export type Appointment = {
   valor: number | null
   forma_pagamento: string | null
   created_at: string
-  patients?: { nome: string; especie: string } | null
+  patients?: { nome: string; especie: string; endereco: string | null } | null
 }
 
 export type AppointmentInput = {
@@ -29,7 +29,7 @@ export type AppointmentInput = {
 async function fetchAppointments(): Promise<Appointment[]> {
   const { data, error } = await supabase
     .from('appointments')
-    .select('*, patients(nome, especie)')
+    .select('*, patients(nome, especie, endereco)')
     .order('data', { ascending: true })
 
   if (error) throw error
@@ -43,7 +43,7 @@ async function createAppointment(input: AppointmentInput) {
   const { data, error } = await supabase
     .from('appointments')
     .insert([{ ...input, vet_id: user.id }])
-    .select('*, patients(nome, especie)')
+    .select('*, patients(nome, especie, endereco)')
     .single()
 
   if (error) throw error
@@ -55,7 +55,7 @@ async function updateAppointment(id: string, updates: Partial<Appointment>) {
     .from('appointments')
     .update(updates)
     .eq('id', id)
-    .select('*, patients(nome, especie)')
+    .select('*, patients(nome, especie, endereco)')
     .single()
 
   if (error) throw error

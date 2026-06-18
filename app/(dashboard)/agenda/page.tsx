@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Toaster } from 'sonner'
 import {
-  ChevronLeft, ChevronRight, MapPin, Loader2, Trash2, CheckCircle2, Filter, Bell, BellOff,
+  ChevronLeft, ChevronRight, MapPin, ExternalLink, Loader2, Trash2, CheckCircle2, Filter, Bell, BellOff,
 } from 'lucide-react'
 
 const typeColors: Record<string, string> = {
@@ -274,7 +274,17 @@ export default function AgendaPage() {
                     </div>
                     {app.tipo === 'externo' && (
                       <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
-                        <MapPin className="h-3 w-3" /> Endereço externo
+                        <MapPin className="h-3 w-3" />
+                        {app.patients?.endereco ? (
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(app.patients.endereco)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5"
+                          >
+                            {app.patients.endereco} <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : 'Endereço externo'}
                       </div>
                     )}
                     {app.valor && (
