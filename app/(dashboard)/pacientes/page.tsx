@@ -24,6 +24,8 @@ export default function PatientsPage() {
   const deletePatient = useDeletePatient()
 
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const perPage = 10
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Patient | null>(null)
   const [form, setForm] = useState<PatientInput>({
@@ -69,7 +71,17 @@ export default function PatientsPage() {
     p.tutor_nome?.toLowerCase().includes(search.toLowerCase())
   ) ?? []
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
+  const paginated = filtered.slice((page - 1) * perPage, page * perPage)
+
   const isPending = createPatient.isPending || updatePatient.isPending
+
+  // Reset page on search
+  const [prevSearch, setPrevSearch] = useState(search)
+  if (search !== prevSearch) {
+    setPrevSearch(search)
+    setPage(1)
+  }
 
   return (
     <div className="p-4 md:p-8">
@@ -123,7 +135,7 @@ export default function PatientsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((patient) => (
+                paginated.map((patient) => (
                   <TableRow key={patient.id} className="border-slate-800 hover:bg-slate-800/50">
                     <TableCell className="font-medium text-slate-200">
                     <Link href={`/pacientes/${patient.id}`} className="hover:text-indigo-400 transition-colors">
@@ -164,6 +176,32 @@ export default function PatientsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-xs text-slate-500">
+            Mostrando {(page - 1) * perPage + 1}-{Math.min(page * perPage, filtered.length)} de {filtered.length}
+          </p>
+          <div className="flex gap-1">
+            <Button variant="outline" size="xs" disabled={page <= 1} onClick={() => setPage(page - 1)}
+              className="border-slate-700 text-slate-400">
+              Anterior
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <Button key={p} variant={p === page ? 'default' : 'outline'} size="xs"
+                onClick={() => setPage(p)}
+                className={p === page ? 'bg-indigo-600 text-white' : 'border-slate-700 text-slate-400'}>
+                {p}
+              </Button>
+            ))}
+            <Button variant="outline" size="xs" disabled={page >= totalPages} onClick={() => setPage(page + 1)}
+              className="border-slate-700 text-slate-400">
+              Próximo
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

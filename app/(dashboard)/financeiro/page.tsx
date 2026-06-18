@@ -1,13 +1,16 @@
 'use client'
 
+import { useState } from 'react'
 import { useCompletedAppointments, useTodaySummary, useMonthSummary } from '@/hooks/useFinances'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, DollarSign, TrendingUp, CalendarDays } from 'lucide-react'
+import { Loader2, DollarSign, TrendingUp, CalendarDays, Download } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 const methodLabels: Record<string, string> = {
   pix: 'Pix',
@@ -27,8 +30,32 @@ export default function FinanceiroPage() {
   const { data: completed, isLoading } = useCompletedAppointments()
   const { data: today } = useTodaySummary()
   const { data: month } = useMonthSummary()
+  const [page, setPage] = useState(1)
+  const perPage = 15
 
   const totalGeral = completed?.reduce((sum, a) => sum + (Number(a.valor) || 0), 0) ?? 0
+  const totalPages = Math.max(1, Math.ceil((completed?.length || 0) / perPage))
+  const paginated = completed?.slice((page - 1) * perPage, page * perPage) ?? []
+
+  function exportCSV() {
+    if (!completed?.length) return
+    const headers = ['Data', 'Paciente', 'Tipo', 'Pagamento', 'Valor']
+    const rows = completed.map((a) => [
+      format(parseISO(a.data), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+      a.patients?.nome || '---',
+      a.tipo === 'fisio' ? 'Fisioterapia' : a.tipo === 'externo' ? 'Externo' : 'Clínico',
+      a.forma_pagamento ? (a.forma_pagamento === 'pix' ? 'Pix' : a.forma_pagamento === 'cartao' ? 'Cartão' : 'Dinheiro') : '-',
+      `R$ ${Number(a.valor || 0).toFixed(2)}`,
+    ])
+    const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${c}"`).join(','))].join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `financeiro-vetpro-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="p-4 md:p-8">
@@ -103,7 +130,15 @@ export default function FinanceiroPage() {
       {/* History Table */}
       <Card className="bg-slate-900 border-slate-800">
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-slate-400">Histórico de Atendimentos</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium text-slate-400">Histórico de Atendimentos</CardTitle>
+            {completed && completed.length > 0 && (
+              <Button variant="outline" size="xs" onClick={exportCSV}
+                className="border-slate-700 text-slate-400 gap-1.5">
+                <Download className="h-3.5 w-3.5" /> Exportar CSV
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -130,7 +165,7 @@ export default function FinanceiroPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                completed.map((app) => (
+                paginated.map((app) => (
                   <TableRow key={app.id} className="border-slate-800 hover:bg-slate-800/50">
                     <TableCell className="text-slate-300">
                       {format(parseISO(app.data), "dd/MM/yyyy 'às' HH:mm")}
@@ -166,6 +201,32 @@ export default function FinanceiroPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-xs text-slate-500">
+            Mostrando {(page - 1) * perPage + 1}-{Math.min(page * perPage, completed?.length || 0)} de {completed?.length || 0}
+          </p>
+          <div className="flex gap-1">
+            <Button variant="outline" size="xs" disabled={page <= 1} onClick={() => setPage(page - 1)}
+              className="border-slate-700 text-slate-400">
+              Anterior
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <Button key={p} variant={p === page ? 'default' : 'outline'} size="xs"
+                onClick={() => setPage(p)}
+                className={p === page ? 'bg-indigo-600 text-white' : 'border-slate-700 text-slate-400'}>
+                {p}
+              </Button>
+            ))}
+            <Button variant="outline" size="xs" disabled={page >= totalPages} onClick={() => setPage(page + 1)}
+              className="border-slate-700 text-slate-400">
+              Próximo
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

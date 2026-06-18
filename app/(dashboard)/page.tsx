@@ -2,12 +2,14 @@
 
 import { useAppointments } from '@/hooks/useAppointments'
 import { useTodaySummary } from '@/hooks/useFinances'
+import { useChat } from '@/hooks/useAi'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Calendar as CalendarIcon, Activity, DollarSign, Plus, Loader2 } from 'lucide-react'
+import { Calendar as CalendarIcon, Activity, DollarSign, Plus, Loader2, Sparkles, Brain } from 'lucide-react'
 import { format, parseISO, isSameDay } from 'date-fns'
 import Link from 'next/link'
+import { useState } from 'react'
 
 const typeLabels: Record<string, string> = {
   fisio: 'Fisioterapia',
@@ -27,12 +29,30 @@ const typeBadge = (tipo: string) => {
 export default function DashboardPage() {
   const { data: appointments, isLoading: loadingApps } = useAppointments()
   const { data: todaySummary, isLoading: loadingFinance } = useTodaySummary()
+  const chatAi = useChat()
+  const [aiInsight, setAiInsight] = useState<string | null>(null)
 
   const todayApps = appointments?.filter((a) =>
     isSameDay(parseISO(a.data), new Date())
   ) ?? []
 
   const todayFisio = todayApps.filter((a) => a.tipo === 'fisio').length
+
+  async function generateInsight() {
+    const resumo = todayApps.map((a) =>
+      `- ${format(parseISO(a.data), 'HH:mm')} | ${a.patients?.nome || '---'} | ${a.tipo === 'fisio' ? 'Fisioterapia' : a.tipo === 'externo' ? 'Externo' : 'Clínico'} | ${a.status === 'concluido' ? 'Concluído' : a.status === 'em_andamento' ? 'Em andamento' : 'Agendado'}${a.valor ? ` | R$ ${a.valor}` : ''}`
+    ).join('\n')
+
+    try {
+      const insight = await chatAi.generate(
+        `Resumo do dia no consultório veterinário:\n\n${resumo}\n\nFaturamento: R$ ${todaySummary?.total.toFixed(2) || '0,00'}\n\nGere um insight curto e profissional sobre o dia, destacando padrões e sugestões.`,
+        'Você é um analista de clínica veterinária. Seja objetivo e prático.'
+      )
+      setAiInsight(insight)
+    } catch {
+      // silent - user sees nothing
+    }
+  }
 
   return (
     <div className="p-4 md:p-8">
@@ -105,6 +125,40 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Insight Card */}
+      <Card className="bg-slate-900 border-slate-800 mb-8">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium text-slate-400 flex items-center gap-2">
+            <Brain className="h-4 w-4 text-indigo-500" /> Insight do Dia
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="xs"
+            disabled={chatAi.loading || todayApps.length === 0}
+            onClick={generateInsight}
+            className="text-indigo-400 hover:text-indigo-300 gap-1"
+          >
+            {chatAi.loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {chatAi.loading ? 'Analisando...' : 'Gerar Insight'}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {aiInsight ? (
+            <p className="text-sm text-slate-200 whitespace-pre-wrap">{aiInsight}</p>
+          ) : (
+            <p className="text-xs text-slate-500">
+              {todayApps.length === 0
+                ? 'Sem atendimentos hoje para analisar.'
+                : 'Clique em "Gerar Insight" para um resumo inteligente do dia.'}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Today's Agenda */}
       <div className="space-y-4">

@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Toaster } from 'sonner'
 import {
-  ChevronLeft, ChevronRight, MapPin, Loader2, Trash2, CheckCircle2,
+  ChevronLeft, ChevronRight, MapPin, Loader2, Trash2, CheckCircle2, Filter,
 } from 'lucide-react'
 
 const typeColors: Record<string, string> = {
@@ -47,6 +47,11 @@ export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState('')
   const [form, setForm] = useState<{ paciente_id: string; tipo: 'fisio' | 'clinico' | 'externo'; hora: string; valor: string }>({ paciente_id: '', tipo: 'clinico', hora: '08:00', valor: '' })
 
+  // Filtros
+  const [filterTipo, setFilterTipo] = useState<string>('')
+  const [filterStatus, setFilterStatus] = useState<string>('')
+  const [filterPaciente, setFilterPaciente] = useState('')
+
   // Finalizar modal
   const [finishOpen, setFinishOpen] = useState(false)
   const [finishingApp, setFinishingApp] = useState<Appointment | null>(null)
@@ -58,10 +63,12 @@ export default function AgendaPage() {
 
   const weekAppointments = useMemo(() => {
     if (!appointments) return []
-    return appointments.filter((a) =>
-      weekDays.some((d) => isSameDay(parseISO(a.data), d))
-    )
-  }, [appointments, weekDays])
+    return appointments
+      .filter((a) => weekDays.some((d) => isSameDay(parseISO(a.data), d)))
+      .filter((a) => !filterTipo || a.tipo === filterTipo)
+      .filter((a) => !filterStatus || a.status === filterStatus)
+      .filter((a) => !filterPaciente || a.patients?.nome?.toLowerCase().includes(filterPaciente.toLowerCase()))
+  }, [appointments, weekDays, filterTipo, filterStatus, filterPaciente])
 
   function openCreateForDate(date: Date) {
     setSelectedDate(format(date, 'yyyy-MM-dd'))
@@ -135,6 +142,48 @@ export default function AgendaPage() {
             Hoje
           </Button>
         </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <Filter className="h-3.5 w-3.5" /> Filtros:
+        </div>
+        <select
+          value={filterTipo}
+          onChange={(e) => setFilterTipo(e.target.value)}
+          className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5"
+        >
+          <option value="">Todos os tipos</option>
+          <option value="fisio">Fisioterapia</option>
+          <option value="clinico">Clínico</option>
+          <option value="externo">Externo</option>
+        </select>
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5"
+        >
+          <option value="">Todos os status</option>
+          <option value="agendado">Agendado</option>
+          <option value="em_andamento">Em andamento</option>
+          <option value="concluido">Concluído</option>
+        </select>
+        <input
+          type="text"
+          value={filterPaciente}
+          onChange={(e) => setFilterPaciente(e.target.value)}
+          placeholder="Buscar paciente..."
+          className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 w-40 placeholder:text-slate-600"
+        />
+        {(filterTipo || filterStatus || filterPaciente) && (
+          <button
+            onClick={() => { setFilterTipo(''); setFilterStatus(''); setFilterPaciente('') }}
+            className="text-xs text-indigo-400 hover:text-indigo-300 px-2"
+          >
+            Limpar filtros
+          </button>
+        )}
       </div>
 
       {/* Calendar Grid */}
