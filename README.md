@@ -82,6 +82,17 @@ Funciona em notebook, tablet e celular.
 - **Comparação de Fotos**: IA analisa evolução visual entre duas fotos (requer modelo vision)
 - **Insight do Dia no Dashboard**: clique e receba um resumo inteligente do dia
 
+#### 📱 PWA (Progressive Web App)
+- Manifest.json com ícones e configuração standalone
+- Service Worker com cache-first para assets estáticos
+- Página `/offline` fallback
+- Instalável como aplicativo no celular e desktop
+
+#### 🔔 Notificações
+- Hook `useNotifications` com `scheduleReminder` e `notifyNow`
+- Botão de permissão na agenda
+- Lembrete automático 15 minutos antes de cada atendimento
+
 #### 🎨 Tema
 - Toggle Claro/Escuro no Header (via `next-themes`)
 
@@ -164,8 +175,6 @@ npm run dev
 
 ## Roadmap Futuro
 
-- [ ] **PWA (modo offline)** — service worker + cache de dados essenciais
-- [ ] **Notificações push** — lembrete de agendamento para o veterinário
 - [ ] **Integração WhatsApp** — compartilhar PDF do relatório diretamente
 - [ ] **Gráficos no Dashboard** — sessões/dia, faturamento mensal, formas de pagamento
 - [ ] **Multi-clínica** — suporte a múltiplos veterinários na mesma conta
