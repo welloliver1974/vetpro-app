@@ -65,7 +65,42 @@ async function fetchMonthSummary() {
   if (error) throw error
 
   const total = data.reduce((sum, a) => sum + (Number(a.valor) || 0), 0)
-  return { total, count: data.length }
+  const methods: Record<string, number> = {}
+  data.forEach((a) => {
+    const m = a.forma_pagamento || 'nao_informado'
+    methods[m] = (methods[m] || 0) + (Number(a.valor) || 0)
+  })
+  return { total, count: data.length, methods }
+}
+
+export async function fetchWeekSessions() {
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7))
+  monday.setHours(0, 0, 0, 0)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 7)
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('data, tipo')
+    .eq('status', 'concluido')
+    .gte('data', monday.toISOString())
+    .lt('data', sunday.toISOString())
+
+  if (error) throw error
+
+  const days = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+  const result: { day: string; count: number }[] = days.map((day) => ({ day, count: 0 }))
+
+  data.forEach((a) => {
+    const d = new Date(a.data)
+    const idx = d.getDay()
+    result[idx].count++
+  })
+
+  return result
 }
 
 export function useCompletedAppointments() {
@@ -86,6 +121,23 @@ export function useMonthSummary() {
   return useQuery({
     queryKey: ['finance-month'],
     queryFn: fetchMonthSummary,
+  })
+}
+
+export function useMonthPaymentMethods() {
+  return useQuery({
+    queryKey: ['finance-month-methods'],
+    queryFn: async () => {
+      const result = await fetchMonthSummary()
+      return result.methods
+    },
+  })
+}
+
+export function useWeekSessions() {
+  return useQuery({
+    queryKey: ['week-sessions'],
+    queryFn: fetchWeekSessions,
   })
 }
 

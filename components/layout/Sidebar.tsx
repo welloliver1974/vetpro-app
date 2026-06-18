@@ -59,14 +59,14 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 z-40 h-full w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-200 md:translate-x-0',
+          'fixed top-0 left-0 z-40 h-full w-64 bg-sidebar border-r border-sidebar-border flex flex-col transition-transform duration-200 md:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         {/* Logo */}
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-800">
-          <PawPrint className="h-6 w-6 text-indigo-500" />
-          <span className="text-lg font-bold text-slate-100">VetPro</span>
+        <div className="flex items-center gap-2 px-6 py-5 border-b border-sidebar-border">
+          <PawPrint className="h-6 w-6 text-blue-500" />
+          <span className="text-lg font-bold text-sidebar-foreground">VetPro</span>
         </div>
 
         {/* Nav */}
@@ -82,8 +82,8 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   active
-                    ? 'bg-indigo-600/10 text-indigo-400'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                    : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent'
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -94,7 +94,7 @@ export function Sidebar() {
         </nav>
 
         {/* Bottom */}
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-sidebar-border">
           {bottomItems.map((item) => {
             const Icon = item.icon
             const active = pathname === item.href
@@ -106,8 +106,8 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   active
-                    ? 'bg-indigo-600/10 text-indigo-400'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                    : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent'
                 )}
               >
                 <Icon className="h-4 w-4" />
