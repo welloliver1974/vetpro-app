@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose,
 } from '@/components/ui/dialog'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -49,6 +49,9 @@ export default function PatientDetailPage() {
   const [slot1, setSlot1] = useState<{ url: string; date: string } | null>(null)
   const [slot2, setSlot2] = useState<{ url: string; date: string } | null>(null)
   const [analysisResult, setAnalysisResult] = useState<string | null>(null)
+  const [previsao, setPrevisao] = useState<string | null>(null)
+  const [loadingPrevisao, setLoadingPrevisao] = useState(false)
+  const [previsaoOpen, setPrevisaoOpen] = useState(false)
 
   const { data: protocols } = useProtocols()
   const patientAppointments = appointments?.filter((a) => a.paciente_id === patientId) ?? []
@@ -192,6 +195,40 @@ export default function PatientDetailPage() {
                 <Sparkles className="h-4 w-4" />
               )}
               Relatório com IA
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={loadingPrevisao || !sessions?.length}
+              onClick={async () => {
+                if (!sessions?.length) return
+                setLoadingPrevisao(true)
+                try {
+                  const evol = sessions.filter((s) => s.notas_evolucao).slice(-5).map((s, i) => `Sessão ${i + 1}: ${s.notas_evolucao}`).join('\n\n')
+                  const pred = await chatAi.generate(
+                    `Paciente: ${patient.nome} (${patient.especie || ''})\n` +
+                    `Total de sessões realizadas: ${sessions.length}\n` +
+                    `Período: ${sessions.length > 1 ? `${format(parseISO(sessions[sessions.length - 1].created_at), 'dd/MM')} até ${format(parseISO(sessions[0].created_at), 'dd/MM')}` : 'apenas 1 sessão'}\n\n` +
+                    `Notas de evolução:\n${evol || 'Nenhuma nota disponível'}\n\n` +
+                    `Com base nesses dados, estime quantas sessões ainda são necessárias para concluir o tratamento e justifique.`,
+                    'Você é um fisioterapeuta veterinário. Seja objetivo e realista.'
+                  )
+                  setPrevisao(pred)
+                  setPrevisaoOpen(true)
+                } catch {
+                  toast.error('Erro ao gerar previsão')
+                } finally {
+                  setLoadingPrevisao(false)
+                }
+              }}
+              className="border-amber-700 text-amber-400 hover:bg-amber-950/30 gap-2"
+            >
+              {loadingPrevisao ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              Previsão de Sessões
             </Button>
             <Button onClick={() => setDialogOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
               <Plus className="h-4 w-4" /> Nova Sessão
@@ -648,6 +685,22 @@ export default function PatientDetailPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={previsaoOpen} onOpenChange={setPrevisaoOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-amber-400 flex items-center gap-2">
+              <Sparkles className="h-5 w-5" /> Previsão de Sessões
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Estimativa baseada no histórico de evolução do paciente.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
+            <p className="text-sm text-slate-200 whitespace-pre-wrap">{previsao}</p>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
