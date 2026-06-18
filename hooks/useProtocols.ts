@@ -34,9 +34,12 @@ async function fetchProtocols(): Promise<Protocol[]> {
 }
 
 async function createProtocol(input: ProtocolInput) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Usuário não autenticado')
+
   const { data, error } = await supabase
     .from('protocols')
-    .insert([input])
+    .insert([{ ...input, vet_id: user.id }])
     .select('*, equipments(nome, modelo)')
     .single()
 

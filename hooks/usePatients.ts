@@ -35,9 +35,12 @@ async function fetchPatients(): Promise<Patient[]> {
 }
 
 async function createPatient(input: PatientInput) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Usuário não autenticado')
+
   const { data, error } = await supabase
     .from('patients')
-    .insert([input])
+    .insert([{ ...input, vet_id: user.id }])
     .select()
     .single()
 

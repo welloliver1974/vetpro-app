@@ -31,9 +31,12 @@ async function fetchEquipments(): Promise<Equipment[]> {
 }
 
 async function createEquipment(input: EquipmentInput) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Usuário não autenticado')
+
   const { data, error } = await supabase
     .from('equipments')
-    .insert([input])
+    .insert([{ ...input, vet_id: user.id }])
     .select()
     .single()
 

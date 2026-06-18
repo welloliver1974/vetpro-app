@@ -37,9 +37,12 @@ async function fetchAppointments(): Promise<Appointment[]> {
 }
 
 async function createAppointment(input: AppointmentInput) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Usuário não autenticado')
+
   const { data, error } = await supabase
     .from('appointments')
-    .insert([input])
+    .insert([{ ...input, vet_id: user.id }])
     .select('*, patients(nome, especie)')
     .single()
 
