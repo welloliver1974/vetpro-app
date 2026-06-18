@@ -8,7 +8,7 @@ import { usePatients } from '@/hooks/usePatients'
 import { useSessionsByPatient, useCreateSession, useUpdateSession, uploadFile } from '@/hooks/useSessions'
 import { useAppointments } from '@/hooks/useAppointments'
 import { useProtocols } from '@/hooks/useProtocols'
-import { useChat, useTranscription } from '@/hooks/useAi'
+import { useChat, useTranscription, useImageAnalysis } from '@/hooks/useAi'
 import { AudioRecorder } from '@/components/vet/AudioRecorder'
 import { ReportPDF } from '@/components/vet/ReportPDF'
 import { Button } from '@/components/ui/button'
@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/tabs'
 import { Toaster, toast } from 'sonner'
 import {
-  Loader2, Plus, ArrowLeft, Sparkles,
+  Loader2, Plus, ArrowLeft, Sparkles, ImageUp, ImageDown, ScanSearch, X,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -44,6 +44,11 @@ export default function PatientDetailPage() {
   const updateSession = useUpdateSession()
   const chatAi = useChat()
   const transcribeAi = useTranscription()
+  const visionAi = useImageAnalysis()
+
+  const [slot1, setSlot1] = useState<{ url: string; date: string } | null>(null)
+  const [slot2, setSlot2] = useState<{ url: string; date: string } | null>(null)
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null)
 
   const { data: protocols } = useProtocols()
   const patientAppointments = appointments?.filter((a) => a.paciente_id === patientId) ?? []
@@ -263,34 +268,180 @@ export default function PatientDetailPage() {
 
         {/* Galeria Tab */}
         <TabsContent value="galeria">
-          {!sessions?.length ? (
-            <Card className="bg-slate-900 border-slate-800">
-              <CardContent className="p-8 text-center text-slate-500">
-                Nenhuma mídia registrada
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {sessions
-                .filter((s) => s.foto_urls?.length > 0)
-                .flatMap((session) =>
-                  session.foto_urls.map((url, i) => (
-                    <a key={`${session.id}-${i}`} href={url} target="_blank" rel="noreferrer">
-                      <div className="relative group">
+          {(() => {
+            const allPhotos = sessions
+              ?.filter((s) => s.foto_urls?.length > 0)
+              .flatMap((session) =>
+                session.foto_urls.map((url) => ({
+                  url,
+                  date: format(parseISO(session.created_at), 'dd/MM/yyyy', { locale: ptBR }),
+                  sessionId: session.id,
+                }))
+              ) ?? []
+
+            if (!allPhotos.length) {
+              return (
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardContent className="p-8 text-center text-slate-500">
+                    Nenhuma mídia registrada
+                  </CardContent>
+                </Card>
+              )
+            }
+
+            function handleSelectPhoto(photo: { url: string; date: string }) {
+              if (slot1?.url === photo.url) { setSlot1(null); return }
+              if (slot2?.url === photo.url) { setSlot2(null); return }
+              if (!slot1) setSlot1(photo)
+              else if (!slot2) setSlot2(photo)
+              else setSlot1(photo)
+            }
+
+            return (
+              <div className="space-y-4">
+                {/* Comparison toolbar */}
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                      {/* Slot 1 - Antes */}
+                      <div className="flex-1 w-full">
+                        <p className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                          <ImageUp className="h-3 w-3 text-emerald-400" /> Antes
+                        </p>
+                        {slot1 ? (
+                          <div className="relative">
+                            <img src={slot1.url} alt="Antes" className="w-full h-24 object-cover rounded-lg border border-slate-700" />
+                            <button onClick={() => setSlot1(null)} className="absolute top-1 right-1 bg-black/60 rounded p-0.5">
+                              <X className="h-3 w-3 text-slate-300" />
+                            </button>
+                            <span className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-slate-300 px-1 py-0.5 rounded">{slot1.date}</span>
+                          </div>
+                        ) : (
+                          <div className="w-full h-24 rounded-lg border border-dashed border-slate-700 flex items-center justify-center text-xs text-slate-600">
+                            Clique numa foto
+                          </div>
+                        )}
+                      </div>
+
+                      {/* VS */}
+                      <div className="hidden md:flex items-center justify-center">
+                        <ScanSearch className="h-6 w-6 text-indigo-500" />
+                      </div>
+
+                      {/* Slot 2 - Depois */}
+                      <div className="flex-1 w-full">
+                        <p className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                          <ImageDown className="h-3 w-3 text-indigo-400" /> Depois
+                        </p>
+                        {slot2 ? (
+                          <div className="relative">
+                            <img src={slot2.url} alt="Depois" className="w-full h-24 object-cover rounded-lg border border-slate-700" />
+                            <button onClick={() => setSlot2(null)} className="absolute top-1 right-1 bg-black/60 rounded p-0.5">
+                              <X className="h-3 w-3 text-slate-300" />
+                            </button>
+                            <span className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-slate-300 px-1 py-0.5 rounded">{slot2.date}</span>
+                          </div>
+                        ) : (
+                          <div className="w-full h-24 rounded-lg border border-dashed border-slate-700 flex items-center justify-center text-xs text-slate-600">
+                            Clique numa foto
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Analyze button */}
+                      <Button
+                        disabled={!slot1 || !slot2 || visionAi.loading}
+                        onClick={async () => {
+                          if (!slot1 || !slot2) return
+                          try {
+                            const result = await visionAi.analyze(
+                              slot1.url,
+                              `Compare estas duas fotos de evolução de um paciente de fisioterapia veterinária.\n` +
+                              `Foto 1 (ANTES - ${slot1.date}):\n` +
+                              `Foto 2 (DEPOIS - ${slot2.date}):\n\n` +
+                              `Analise: 1) Houve melhora, piora ou está estável? 2) O que mudou visivelmente? 3) Recomendações.\n` +
+                              `Seja técnico mas claro, como um fisioterapeuta veterinário.`
+                            )
+                            setAnalysisResult(result)
+                          } catch (e) {
+                            toast.error(e instanceof Error ? e.message : 'Erro ao analisar fotos')
+                          }
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shrink-0"
+                      >
+                        {visionAi.loading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ScanSearch className="h-4 w-4" />
+                        )}
+                        {visionAi.loading ? 'Analisando...' : 'Comparar com IA'}
+                      </Button>
+                    </div>
+
+                    {/* Analysis result */}
+                    {analysisResult && (
+                      <div className="mt-4 p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/50">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-xs text-indigo-400 font-medium mb-1">🔍 Análise de Evolução</p>
+                          <button onClick={() => setAnalysisResult(null)} className="text-slate-500 hover:text-slate-300">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <p className="text-sm text-slate-200 whitespace-pre-wrap">{analysisResult}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Photo grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {allPhotos.map((photo, idx) => {
+                    const isSlot1 = slot1?.url === photo.url
+                    const isSlot2 = slot2?.url === photo.url
+                    return (
+                      <button
+                        key={`${photo.sessionId}-${idx}`}
+                        onClick={() => {
+                          if (isSlot1 || isSlot2) {
+                            if (isSlot1) setSlot1(null)
+                            if (isSlot2) setSlot2(null)
+                          } else {
+                            handleSelectPhoto(photo)
+                          }
+                        }}
+                        className="relative group text-left"
+                      >
                         <img
-                          src={url}
-                          alt={`Evolução - ${format(parseISO(session.created_at), 'dd/MM')}`}
-                          className="rounded-lg border border-slate-700 w-full h-32 object-cover group-hover:opacity-80 transition-opacity"
+                          src={photo.url}
+                          alt={`Evolução ${photo.date}`}
+                          className={`rounded-lg border w-full h-32 object-cover transition-all ${
+                            isSlot1
+                              ? 'border-emerald-500 ring-2 ring-emerald-500/50'
+                              : isSlot2
+                              ? 'border-indigo-500 ring-2 ring-indigo-500/50'
+                              : 'border-slate-700 group-hover:border-slate-500'
+                          }`}
                         />
                         <div className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-slate-300 px-1.5 py-0.5 rounded">
-                          {format(parseISO(session.created_at), 'dd/MM', { locale: ptBR })}
+                          {photo.date}
                         </div>
-                      </div>
-                    </a>
-                  ))
-                )}
-            </div>
-          )}
+                        {isSlot1 && (
+                          <div className="absolute top-1 left-1 bg-emerald-600 text-[10px] text-white px-1.5 py-0.5 rounded font-medium">
+                            Antes
+                          </div>
+                        )}
+                        {isSlot2 && (
+                          <div className="absolute top-1 right-1 bg-indigo-600 text-[10px] text-white px-1.5 py-0.5 rounded font-medium">
+                            Depois
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
         </TabsContent>
       </Tabs>
 
