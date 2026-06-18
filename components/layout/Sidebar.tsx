@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Settings,
+  Building2,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,7 @@ const navItems = [
 
 const bottomItems = [
   { href: '/configuracoes', label: 'Configurações', icon: Settings },
+  { href: '/configuracoes/clinica', label: 'Clínica', icon: Building2 },
 ]
 
 export function Sidebar() {
