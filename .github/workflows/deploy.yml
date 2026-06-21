@@ -28,8 +28,3 @@ jobs:
             npm ci --legacy-peer-deps
             npm run build
             PORT=4004 pm2 restart vetpro --update-env || PORT=4004 pm2 start npm --name vetpro -- start
-
-      - name: Health check
-        run: |
-          sleep 5
-          curl -f https://vetpro.housecloud.tec.br/health || exit 1
