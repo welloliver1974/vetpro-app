@@ -161,7 +161,7 @@ Funciona em notebook, tablet e celular.
 | ~~9~~ | ~~Financeiro: gráfico de linha (receita ao longo do tempo)~~ — ✅ | 💡 Funcionalidades |
 | ~~10~~ | ~~Financeiro: metas mensais de faturamento~~ — ✅ | 💡 Funcionalidades |
 | ~~11~~ | ~~Revisar bundle com `next/bundle-analyzer`~~ — ✅ | 🚀 Performance |
-| 12 | CI/CD no GitHub Actions (build + lint + testes) | 🧪 Qualidade |
+| ~~12~~ | ~~CI/CD no GitHub Actions (build + lint + testes)~~ — ✅ | 🧪 Qualidade |
 | 13 | Sugestão de Preço (IA) | 🤖 IA |
 | 14 | Relatório Semanal Automático (IA + cron) | 🤖 IA |
 | 15 | Backup: exportar/importar dados (JSON) | 💡 Funcionalidades |
@@ -619,3 +619,30 @@ npm run lint     # 0 erros
 - `npm run build` — 0 erros
 - `npx vitest run` — 77/77 testes passando
 - Roadshow item #18 ✅
+
+---
+
+## Checkpoint da Sessão 21/06/2026 (Tarde)
+
+### CI/CD + Deploy no VPS Oracle (Item #12)
+
+**CI (GitHub Actions):**
+- Workflow `ci.yml`: lint + build + testes rodam automaticamente em todo push/PR no branch `master`
+- 3 jobs paralelos: lint, build, test
+
+**Deploy (GitHub Actions → VPS Oracle):**
+- Workflow `deploy.yml`: push na `master` faz deploy automático no VPS
+- Usa `appleboy/ssh-action` com secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`
+- Porta 4004, PM2 para gerenciar o processo
+- Health check após deploy
+
+**Scripts de setup:**
+- `scripts/vps-setup.sh`: setup inicial do servidor (Node 20, Nginx, PM2, SSL Let's Encrypt)
+
+**Resultado:**
+- App no ar em **https://vetpro.housecloud.tec.br**
+- Deploy automático: a cada push na `master`, CI valida e deploy vai pro ar
+- `npm run lint` — 0 erros
+- `npm run build` — 0 erros
+- `npx vitest run` — 77/77 testes passando
+- Roadmap item #12 ✅
