@@ -9,7 +9,7 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    environment: production
+    environment: VPS_SSH_KEY
 
     steps:
       - uses: actions/checkout@v4
@@ -20,10 +20,13 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          envs:
+            - NEXT_PUBLIC_SUPABASE_URL
+            - NEXT_PUBLIC_SUPABASE_ANON_KEY
           script: |
             cd /home/ubuntu/vetpro-app
-            git pull origin main
-            npm ci
+            git pull origin master
+            npm ci --legacy-peer-deps
             npm run build
             PORT=4004 pm2 restart vetpro --update-env || PORT=4004 pm2 start npm --name vetpro -- start
 
