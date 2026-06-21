@@ -12,6 +12,7 @@ import { useProtocols } from '@/hooks/useProtocols'
 import { useChat, useTranscription, useImageAnalysis } from '@/hooks/useAi'
 import { AudioRecorder } from '@/components/vet/AudioRecorder'
 import { ReportPDF } from '@/components/vet/ReportPDF'
+import { WeightChart } from '@/components/WeightChart'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -112,6 +113,7 @@ export default function PatientDetailPage() {
   const [notas, setNotas] = useState('')
   const [notasEvolucao, setNotasEvolucao] = useState('')
   const [custo, setCusto] = useState('')
+  const [peso, setPeso] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
 
@@ -142,6 +144,7 @@ export default function PatientDetailPage() {
         notas: notas || undefined,
         notas_evolucao: notasEvolucao || undefined,
         custo: custo ? Number(custo) : undefined,
+        peso: peso ? Number(peso) : undefined,
       })
 
       if (uploadedUrls.length > 0 && session?.id) {
@@ -155,6 +158,7 @@ export default function PatientDetailPage() {
       setNotas('')
       setNotasEvolucao('')
       setCusto('')
+      setPeso('')
       setFiles([])
       setSelectedAppointment('')
     } catch (err) {
@@ -324,6 +328,8 @@ export default function PatientDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      <WeightChart sessions={sessions || []} />
 
       <Tabs defaultValue="sessoes" className="space-y-6">
         <TabsList className="bg-card border border-border grid grid-cols-3 w-full sm:w-auto">
@@ -936,6 +942,17 @@ export default function PatientDetailPage() {
                 className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground"
               />
               <p className="text-xs text-muted-foreground">Energia, material descartável, etc.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground">Peso do Paciente (kg)</Label>
+              <Input
+                type="number" step="0.01" min="0"
+                value={peso}
+                onChange={(e) => setPeso(e.target.value)}
+                placeholder="0.00"
+                className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground"
+              />
             </div>
 
             <div className="space-y-2">

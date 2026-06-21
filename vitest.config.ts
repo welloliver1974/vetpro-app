@@ -8,10 +8,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
-  },
-  resolve: {
     alias: {
       '@': path.resolve(__dirname, './'),
+      '@/lib/supabase/client': path.resolve(__dirname, './lib/supabase/client.ts'),
     },
   },
 })

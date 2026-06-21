@@ -167,7 +167,7 @@ Funciona em notebook, tablet e celular.
 | 15 | Backup: exportar/importar dados (JSON) | 💡 Funcionalidades |
 | 16 | Auditoria: log de alterações em registros | 💡 Funcionalidades |
 | 17 | Testes de integração/e2e (Playwright) | 🧪 Qualidade |
-| 18 | Pacientes: gráfico de peso ao longo do tempo | 💡 Funcionalidades |
+| ~~18~~ | ~~Pacientes: gráfico de peso ao longo do tempo~~ — ✅ | 💡 Funcionalidades |
 | 19 | Pacientes: timeline visual de evolução | 💡 Funcionalidades |
 | 20 | Agenda: agendamento recorrente | 💡 Funcionalidades |
 | 21 | Notificações: lembrete por WhatsApp/e-mail (webhook) | 💡 Funcionalidades |
@@ -554,3 +554,68 @@ npm run lint     # 0 erros
   - `/financeiro`
 - **Resultado**: A biblioteca de gráficos, que é um dos maiores contributors do bundle, agora é carregada de forma lazy no cliente, reduzindo o tempo de bloqueio do thread principal no carregamento inicial das rotas.
 - `npm run build` — 0 erros.
+
+---
+
+## Checkpoint da Sessão 21/06/2026
+
+### 🧪 Testes Unitários - Hooks Críticos e Crypto
+
+**Novos testes criados (60 testes):**
+
+| Arquivo | Testes | Cobertura |
+|---------|--------|-----------|
+| `tests/hooks/usePatients.test.ts` | 6 | Fetch, create, update, delete + auth error |
+| `tests/hooks/useEquipments.test.ts` | 6 | Fetch, create, update, delete + auth error |
+| `tests/hooks/useAppointments.test.ts` | 6 | Fetch, create, update, delete + auth error |
+| `tests/hooks/useSupplies.test.ts` | 6 | Fetch, create, update, delete + auth error |
+| `tests/hooks/useProtocols.test.ts` | 6 | Fetch, create, update, delete + auth error |
+| `tests/hooks/usePrescriptions.test.ts` | 6 | Fetch, create, update, delete + auth error |
+| `tests/hooks/useMonthlyGoals.test.ts` | 5 | Fetch, upsert, delete + auth error |
+| `tests/hooks/useSessions.test.ts` | 5 | Fetch by patient/appointment, create, update |
+| `tests/lib/crypto.test.ts` | 13 | Encrypt/decrypt roundtrip, edge cases |
+
+**Total: 77 testes passando** (17 existentes + 60 novos)
+
+**Padrão utilizado:**
+- Vitest + Testing Library + TanStack Query wrapper
+- Mock do Supabase client com query builder thenable
+- Mock do sonner (toast)
+- Testes de: success, error handling, loading states, auth errors
+
+### ✅ Resultado
+- `npm run lint` — 0 erros, 0 warnings
+- `npm run build` — 0 erros
+- `npx vitest run` — 77/77 testes passando
+
+### 🔄 Próximos passos recomendados
+- Testes de integração/e2e (Playwright) — Item #17 do roadmap
+- CI/CD no GitHub Actions — Item #12 do roadmap
+- Ajustes finos de responsividade mobile
+- Estados vazios nas telas restantes
+
+---
+
+## Checkpoint da Sessão 21/06/2026 (Manhã)
+
+### 📊 Pacientes: Gráfico de Peso ao Longo do Tempo (Item #18)
+
+- Criada migration SQL `supabase-migration-peso-sessoes.sql` adicionando coluna `peso` à tabela `sessions` (tipo `double precision`, nullable)
+- Tipo `Session` em `hooks/useSessions.ts` atualizado com `peso: number | null`
+- Tipo `SessionInput` em `hooks/useSessions.ts` atualizado com `peso?: number`
+- Queries `fetchSessionsByPatient` e `fetchSessionsByAppointment` atualizadas para incluir `peso` no select
+- `createSession` — insert com `peso` retornado no select
+- `updateSession` — update com `peso` retornado no select
+- Criado componente `components/WeightChart.tsx`:
+  - Usa Recharts com `LineChart` (dynamic import, `ssr: false`)
+  - Exibe evolução do peso ordenando sessões da mais antiga para a mais recente
+  - Oculta quando não há dados de peso
+  - Y-axis com domínio dinâmico (padding de 10% entre min/max)
+- Campo `peso` adicionado no formulário de Nova Sessão (em kg, step 0.01)
+- `WeightChart` renderizado acima das tabs na página `/pacientes/[id]`
+
+### ✅ Resultado
+- `npm run lint` — 0 erros
+- `npm run build` — 0 erros
+- `npx vitest run` — 77/77 testes passando
+- Roadshow item #18 ✅

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { usePatients, useCreatePatient, useUpdatePatient, useDeletePatient } from '@/hooks/usePatients';
+import { useEquipments, useCreateEquipment, useUpdateEquipment, useDeleteEquipment } from '@/hooks/useEquipments';
 import { toast } from 'sonner';
 import * as supabaseClient from '@/lib/supabase/client';
 import React from 'react';
@@ -61,7 +61,7 @@ const createWrapper = () => {
   return Wrapper;
 };
 
-describe('usePatients hooks', () => {
+describe('useEquipments hooks', () => {
   let mockSupabase: typeof supabaseClient._mockSupabase;
 
   beforeEach(() => {
@@ -70,22 +70,22 @@ describe('usePatients hooks', () => {
     mockSupabase.auth.getUser.mockReset();
   });
 
-  describe('usePatients', () => {
-    it('should fetch patients successfully', async () => {
-      const mockPatients = [
-        { id: '1', nome: 'Rex', especie: 'Cão', raca: 'Labrador', created_at: '2024-01-01' },
+  describe('useEquipments', () => {
+    it('should fetch equipments successfully', async () => {
+      const mockEquipments = [
+        { id: '1', nome: 'Laser', modelo: 'XYZ', ultima_manutencao: '2024-01-01', created_at: '2024-01-01' },
       ];
 
-      const mockQueryBuilder = createMockQueryBuilder(mockPatients, null);
+      const mockQueryBuilder = createMockQueryBuilder(mockEquipments, null);
       mockSupabase.from.mockReturnValue(mockQueryBuilder);
 
-      const { result } = renderHook(() => usePatients(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useEquipments(), { wrapper: createWrapper() });
 
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      expect(result.current.data).toEqual(mockPatients);
+      expect(result.current.data).toEqual(mockEquipments);
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -93,7 +93,7 @@ describe('usePatients hooks', () => {
       const mockQueryBuilder = createMockQueryBuilder(null, new Error('DB Error'));
       mockSupabase.from.mockReturnValue(mockQueryBuilder);
 
-      const { result } = renderHook(() => usePatients(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useEquipments(), { wrapper: createWrapper() });
 
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -103,33 +103,33 @@ describe('usePatients hooks', () => {
     });
   });
 
-  describe('useCreatePatient', () => {
-    it('should create a patient successfully', async () => {
+  describe('useCreateEquipment', () => {
+    it('should create an equipment successfully', async () => {
       const mockUser = { data: { user: { id: 'vet-123' } } };
-      const mockPatient = { id: 'p-1', nome: 'Rex' };
+      const mockEquipment = { id: 'e-1', nome: 'Laser' };
 
       mockSupabase.auth.getUser.mockResolvedValue(mockUser);
-      const mockQueryBuilder = createMockQueryBuilder(mockPatient, null);
+      const mockQueryBuilder = createMockQueryBuilder(mockEquipment, null);
       mockSupabase.from.mockReturnValue(mockQueryBuilder);
 
-      const { result } = renderHook(() => useCreatePatient(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useCreateEquipment(), { wrapper: createWrapper() });
 
       await act(async () => {
-        await result.current.mutateAsync({ nome: 'Rex' });
+        await result.current.mutateAsync({ nome: 'Laser' });
       });
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('patients');
-      expect(toast.success).toHaveBeenCalledWith('Paciente cadastrado com sucesso!');
+      expect(mockSupabase.from).toHaveBeenCalledWith('equipments');
+      expect(toast.success).toHaveBeenCalledWith('Equipamento cadastrado!');
     });
 
     it('should throw error if user is not authenticated', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
 
-      const { result } = renderHook(() => useCreatePatient(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useCreateEquipment(), { wrapper: createWrapper() });
 
       await act(async () => {
         try {
-          await result.current.mutateAsync({ nome: 'Rex' });
+          await result.current.mutateAsync({ nome: 'Laser' });
         } catch {}
       });
 
@@ -137,36 +137,36 @@ describe('usePatients hooks', () => {
     });
   });
 
-  describe('useUpdatePatient', () => {
-    it('should update patient successfully', async () => {
-      const mockPatient = { id: '1', nome: 'Rex Updated' };
-      const mockQueryBuilder = createMockQueryBuilder(mockPatient, null);
+  describe('useUpdateEquipment', () => {
+    it('should update equipment successfully', async () => {
+      const mockEquipment = { id: '1', nome: 'Laser Atualizado' };
+      const mockQueryBuilder = createMockQueryBuilder(mockEquipment, null);
       mockSupabase.from.mockReturnValue(mockQueryBuilder);
 
-      const { result } = renderHook(() => useUpdatePatient(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useUpdateEquipment(), { wrapper: createWrapper() });
 
       await act(async () => {
-        await result.current.mutateAsync({ id: '1', data: { nome: 'Rex Updated' } });
+        await result.current.mutateAsync({ id: '1', data: { nome: 'Laser Atualizado' } });
       });
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('patients');
-      expect(toast.success).toHaveBeenCalledWith('Paciente atualizado!');
+      expect(mockSupabase.from).toHaveBeenCalledWith('equipments');
+      expect(toast.success).toHaveBeenCalledWith('Equipamento atualizado!');
     });
   });
 
-  describe('useDeletePatient', () => {
-    it('should delete patient successfully', async () => {
+  describe('useDeleteEquipment', () => {
+    it('should delete equipment successfully', async () => {
       const mockQueryBuilder = createMockQueryBuilder(null, null);
       mockSupabase.from.mockReturnValue(mockQueryBuilder);
 
-      const { result } = renderHook(() => useDeletePatient(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useDeleteEquipment(), { wrapper: createWrapper() });
 
       await act(async () => {
         await result.current.mutateAsync('1');
       });
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('patients');
-      expect(toast.success).toHaveBeenCalledWith('Paciente removido!');
+      expect(mockSupabase.from).toHaveBeenCalledWith('equipments');
+      expect(toast.success).toHaveBeenCalledWith('Equipamento removido!');
     });
   });
 });

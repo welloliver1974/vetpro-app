@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { usePatients, useCreatePatient, useUpdatePatient, useDeletePatient } from '@/hooks/usePatients';
+import { useMonthlyGoals, useUpsertMonthlyGoal, useDeleteMonthlyGoal } from '@/hooks/useMonthlyGoals';
 import { toast } from 'sonner';
 import * as supabaseClient from '@/lib/supabase/client';
 import React from 'react';
@@ -14,6 +14,7 @@ const createMockQueryBuilder = (mockData: MockData = null, mockError: MockError 
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
+    upsert: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
@@ -61,7 +62,7 @@ const createWrapper = () => {
   return Wrapper;
 };
 
-describe('usePatients hooks', () => {
+describe('useMonthlyGoals hooks', () => {
   let mockSupabase: typeof supabaseClient._mockSupabase;
 
   beforeEach(() => {
@@ -70,22 +71,23 @@ describe('usePatients hooks', () => {
     mockSupabase.auth.getUser.mockReset();
   });
 
-  describe('usePatients', () => {
-    it('should fetch patients successfully', async () => {
-      const mockPatients = [
-        { id: '1', nome: 'Rex', especie: 'Cão', raca: 'Labrador', created_at: '2024-01-01' },
+  describe('useMonthlyGoals', () => {
+    it('should fetch monthly goals successfully', async () => {
+      const mockGoals = [
+        { id: '1', vet_id: 'v1', mes: 1, ano: 2024, valor_meta: 5000, created_at: '2024-01-01' },
+        { id: '2', vet_id: 'v1', mes: 2, ano: 2024, valor_meta: 6000, created_at: '2024-02-01' },
       ];
 
-      const mockQueryBuilder = createMockQueryBuilder(mockPatients, null);
+      const mockQueryBuilder = createMockQueryBuilder(mockGoals, null);
       mockSupabase.from.mockReturnValue(mockQueryBuilder);
 
-      const { result } = renderHook(() => usePatients(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useMonthlyGoals(), { wrapper: createWrapper() });
 
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
-      expect(result.current.data).toEqual(mockPatients);
+      expect(result.current.data).toEqual(mockGoals);
       expect(result.current.isSuccess).toBe(true);
     });
 
@@ -93,7 +95,7 @@ describe('usePatients hooks', () => {
       const mockQueryBuilder = createMockQueryBuilder(null, new Error('DB Error'));
       mockSupabase.from.mockReturnValue(mockQueryBuilder);
 
-      const { result } = renderHook(() => usePatients(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useMonthlyGoals(), { wrapper: createWrapper() });
 
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -103,70 +105,53 @@ describe('usePatients hooks', () => {
     });
   });
 
-  describe('useCreatePatient', () => {
-    it('should create a patient successfully', async () => {
+  describe('useUpsertMonthlyGoal', () => {
+    it('should upsert a monthly goal successfully', async () => {
       const mockUser = { data: { user: { id: 'vet-123' } } };
-      const mockPatient = { id: 'p-1', nome: 'Rex' };
+      const mockGoal = { id: 'g-1', vet_id: 'vet-123', mes: 1, ano: 2024, valor_meta: 5000 };
 
       mockSupabase.auth.getUser.mockResolvedValue(mockUser);
-      const mockQueryBuilder = createMockQueryBuilder(mockPatient, null);
+      const mockQueryBuilder = createMockQueryBuilder(mockGoal, null);
       mockSupabase.from.mockReturnValue(mockQueryBuilder);
 
-      const { result } = renderHook(() => useCreatePatient(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useUpsertMonthlyGoal(), { wrapper: createWrapper() });
 
       await act(async () => {
-        await result.current.mutateAsync({ nome: 'Rex' });
+        await result.current.mutateAsync({ mes: 1, ano: 2024, valor_meta: 5000 });
       });
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('patients');
-      expect(toast.success).toHaveBeenCalledWith('Paciente cadastrado com sucesso!');
+      expect(mockSupabase.from).toHaveBeenCalledWith('monthly_goals');
+      expect(toast.success).toHaveBeenCalledWith('Meta salva com sucesso');
     });
 
     it('should throw error if user is not authenticated', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
 
-      const { result } = renderHook(() => useCreatePatient(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useUpsertMonthlyGoal(), { wrapper: createWrapper() });
 
       await act(async () => {
         try {
-          await result.current.mutateAsync({ nome: 'Rex' });
+          await result.current.mutateAsync({ mes: 1, ano: 2024, valor_meta: 5000 });
         } catch {}
       });
 
-      expect(toast.error).toHaveBeenCalledWith('Usuário não autenticado');
+      expect(toast.error).toHaveBeenCalledWith('Erro ao salvar meta');
     });
   });
 
-  describe('useUpdatePatient', () => {
-    it('should update patient successfully', async () => {
-      const mockPatient = { id: '1', nome: 'Rex Updated' };
-      const mockQueryBuilder = createMockQueryBuilder(mockPatient, null);
-      mockSupabase.from.mockReturnValue(mockQueryBuilder);
-
-      const { result } = renderHook(() => useUpdatePatient(), { wrapper: createWrapper() });
-
-      await act(async () => {
-        await result.current.mutateAsync({ id: '1', data: { nome: 'Rex Updated' } });
-      });
-
-      expect(mockSupabase.from).toHaveBeenCalledWith('patients');
-      expect(toast.success).toHaveBeenCalledWith('Paciente atualizado!');
-    });
-  });
-
-  describe('useDeletePatient', () => {
-    it('should delete patient successfully', async () => {
+  describe('useDeleteMonthlyGoal', () => {
+    it('should delete monthly goal successfully', async () => {
       const mockQueryBuilder = createMockQueryBuilder(null, null);
       mockSupabase.from.mockReturnValue(mockQueryBuilder);
 
-      const { result } = renderHook(() => useDeletePatient(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useDeleteMonthlyGoal(), { wrapper: createWrapper() });
 
       await act(async () => {
         await result.current.mutateAsync('1');
       });
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('patients');
-      expect(toast.success).toHaveBeenCalledWith('Paciente removido!');
+      expect(mockSupabase.from).toHaveBeenCalledWith('monthly_goals');
+      expect(toast.success).toHaveBeenCalledWith('Meta removida');
     });
   });
 });

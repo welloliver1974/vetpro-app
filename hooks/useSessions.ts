@@ -13,6 +13,7 @@ export type Session = {
   notas: string | null
   notas_evolucao: string | null
   custo: number | null
+  peso: number | null
   foto_urls: string[]
   created_at: string
   appointments?: {
@@ -30,6 +31,7 @@ export type SessionInput = {
   notas?: string
   notas_evolucao?: string
   custo?: number
+  peso?: number
 }
 
 async function fetchSessionsByPatient(patientId: string): Promise<Session[]> {
@@ -43,7 +45,7 @@ async function fetchSessionsByPatient(patientId: string): Promise<Session[]> {
   const ids = appointments.map((a) => a.id)
   const { data, error } = await supabase
     .from('sessions')
-    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, foto_urls, created_at, appointments!inner(id, data, tipo, valor, patients!inner(nome, especie))')
+    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, peso, foto_urls, created_at, appointments!inner(id, data, tipo, valor, patients!inner(nome, especie))')
     .in('appointment_id', ids)
     .order('created_at', { ascending: false })
 
@@ -54,7 +56,7 @@ async function fetchSessionsByPatient(patientId: string): Promise<Session[]> {
 async function fetchSessionsByAppointment(appointmentId: string): Promise<Session[]> {
   const { data, error } = await supabase
     .from('sessions')
-    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, foto_urls, created_at')
+    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, peso, foto_urls, created_at')
     .eq('appointment_id', appointmentId)
     .order('created_at', { ascending: false })
 
@@ -66,7 +68,7 @@ async function createSession(input: SessionInput) {
   const { data, error } = await supabase
     .from('sessions')
     .insert([input])
-    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, foto_urls, created_at')
+    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, peso, foto_urls, created_at')
     .single()
 
   if (error) throw error
@@ -78,7 +80,7 @@ async function updateSession(id: string, input: Partial<SessionInput & { foto_ur
     .from('sessions')
     .update(input)
     .eq('id', id)
-    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, foto_urls, created_at')
+    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, peso, foto_urls, created_at')
     .single()
 
   if (error) throw error

@@ -1,0 +1,33 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/vetpro-app
+            git pull origin main
+            npm ci
+            npm run build
+            PORT=4004 pm2 restart vetpro --update-env || PORT=4004 pm2 start npm --name vetpro -- start
+
+      - name: Health check
+        run: |
+          sleep 5
+          curl -f https://vetpro.housecloud.tec.br/health || exit 1
