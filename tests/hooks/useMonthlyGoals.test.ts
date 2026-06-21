@@ -20,7 +20,7 @@ const createMockQueryBuilder = (mockData: MockData = null, mockError: MockError 
     delete: vi.fn().mockReturnThis(),
     single: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
-    // eslint-disable-next-line unicorn/no-thenable
+    
     then: vi.fn().mockImplementation((onFulfilled) => Promise.resolve({ data: mockData, error: mockError }).then(onFulfilled)),
   };
   return builder;
