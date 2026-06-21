@@ -16,7 +16,7 @@ sudo systemctl stop nginx
 echo "=== 3. Clonando/app do repo ==="
 cd /home/ubuntu
 if [ -d "vetpro-app" ]; then
-    cd vetpro-app && git pull origin main
+    cd vetpro-app && git pull origin master
 else
     git clone https://github.com/welloliver1974/vetpro-app.git
     cd vetpro-app
