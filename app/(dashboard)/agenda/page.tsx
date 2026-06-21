@@ -21,9 +21,9 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Toaster } from 'sonner'
+import { EmptyState } from '@/components/EmptyState'
 import {
-  ChevronLeft, ChevronRight, MapPin, ExternalLink, Loader2, Trash2, CheckCircle2, Filter, Bell, BellOff,
+  ChevronLeft, ChevronRight, MapPin, ExternalLink, Loader2, Trash2, CheckCircle2, Filter, Bell, BellOff, CalendarDays, PawPrint,
 } from 'lucide-react'
 
 const typeColors: Record<string, string> = {
@@ -51,7 +51,7 @@ export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState('')
   const [form, setForm] = useState<{ paciente_id: string; tipo: 'fisio' | 'clinico' | 'externo'; hora: string; valor: string }>({ paciente_id: '', tipo: 'clinico', hora: '08:00', valor: '' })
   const [notifGranted, setNotifGranted] = useState<'granted' | 'denied' | 'default'>(
-    typeof window !== 'undefined' ? Notification.permission : 'default'
+    typeof window === 'undefined' ? 'default' : Notification.permission
   )
 
   // Filtros
@@ -153,14 +153,13 @@ export default function AgendaPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <Toaster richColors position="top-center" />
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-3xl font-bold tracking-tight">Agenda</h1>
           <p className="text-sm text-muted-foreground">Visualização semanal</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <Button variant="outline" size="icon-sm" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}
             className="border-border text-muted-foreground">
             <ChevronLeft className="h-4 w-4" />
@@ -192,7 +191,7 @@ export default function AgendaPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="grid gap-2 mb-4 sm:flex sm:flex-wrap">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Filter className="h-3.5 w-3.5" /> Filtros:
         </div>
@@ -221,12 +220,12 @@ export default function AgendaPage() {
           value={filterPaciente}
           onChange={(e) => setFilterPaciente(e.target.value)}
           placeholder="Buscar paciente..."
-          className="bg-muted border border-border text-foreground text-xs rounded-lg px-2 py-1.5 w-40 placeholder:text-muted-foreground"
+          className="bg-muted border border-border text-foreground text-xs rounded-lg px-2 py-1.5 w-full sm:w-40 placeholder:text-muted-foreground"
         />
         {(filterTipo || filterStatus || filterPaciente) && (
           <button
             onClick={() => { setFilterTipo(''); setFilterStatus(''); setFilterPaciente('') }}
-            className="text-xs text-indigo-400 hover:text-indigo-300 px-2"
+            className="text-xs text-primary hover:text-primary/80 px-2"
           >
             Limpar filtros
           </button>
@@ -234,14 +233,14 @@ export default function AgendaPage() {
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-2 mb-6">
+       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2 mb-6">
         {weekDays.map((day) => {
           const isToday = isSameDay(day, new Date())
           const dayApps = appointments?.filter((a) => isSameDay(parseISO(a.data), day)) ?? []
           return (
             <Card
               key={day.toISOString()}
-              className={`bg-card border-border min-h-[120px] cursor-pointer hover:border-border transition-colors ${isToday ? 'ring-1 ring-indigo-500/50' : ''}`}
+              className={`bg-card border-border min-h-[120px] cursor-pointer hover:border-border transition-colors ${isToday ? 'ring-1 ring-primary/50' : ''}`}
               onClick={() => openCreateForDate(day)}
             >
               <CardContent className="p-2">
@@ -249,7 +248,7 @@ export default function AgendaPage() {
                   <div className="text-[10px] uppercase text-muted-foreground">
                     {format(day, 'EEE', { locale: ptBR })}
                   </div>
-                  <div className={`text-lg font-bold ${isToday ? 'text-indigo-400' : 'text-card-foreground'}`}>
+                  <div className={`text-lg font-bold ${isToday ? 'text-primary' : 'text-card-foreground'}`}>
                     {format(day, 'd')}
                   </div>
                 </div>
@@ -281,73 +280,81 @@ export default function AgendaPage() {
           {weekAppointments.map((app) => (
             <Card key={app.id} className={`bg-card border-l-4 ${app.status === 'concluido' ? 'border-l-border opacity-60' : app.tipo === 'fisio' ? 'border-l-emerald-500' : app.tipo === 'externo' ? 'border-l-amber-500' : 'border-l-blue-500'}`}>
               <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div className="flex items-center gap-4">
-                  <div className="text-lg font-bold text-indigo-400 min-w-[60px]">
-                    {format(parseISO(app.data), 'HH:mm')}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-card-foreground">{app.patients?.nome || '---'}</span>
-                      <Badge variant="outline" className={`text-[10px] ${app.tipo === 'fisio' ? 'border-emerald-800 text-emerald-400' : app.tipo === 'externo' ? 'border-amber-800 text-amber-400' : 'border-blue-800 text-blue-400'}`}>
-                        {typeLabels[app.tipo]}
-                      </Badge>
-                    </div>
-                    {app.tipo === 'externo' && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                        <MapPin className="h-3 w-3" />
-                        {app.patients?.endereco ? (
-                          <a
-                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(app.patients.endereco)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5"
-                          >
-                            {app.patients.endereco} <ExternalLink className="h-3 w-3" />
-                          </a>
-                        ) : 'Endereço externo'}
-                      </div>
-                    )}
-                    {app.valor && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        R$ {Number(app.valor).toFixed(2)}
-                        {app.forma_pagamento && ` • ${app.forma_pagamento === 'pix' ? 'Pix' : app.forma_pagamento === 'cartao' ? 'Cartão' : 'Dinheiro'}`}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-                  {app.status === 'agendado' && (
-                    <>
-                      <Button size="xs" onClick={() => openFinishModal(app)}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Finalizar
-                      </Button>
-                      <Button variant="ghost" size="icon-xs"
-                        onClick={() => handleDelete(app.id)}
-                        className="text-muted-foreground hover:text-red-400">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
-                  )}
-                  {app.status === 'concluido' && (
-                    <>
-                      <Badge className="bg-muted text-muted-foreground border-border">Concluído</Badge>
-                      <Button variant="ghost" size="icon-xs"
-                        onClick={() => handleDelete(app.id)}
-                        className="text-muted-foreground hover:text-red-400">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
-                  )}
-                </div>
+                     <div className="flex items-center gap-4 min-w-0">
+                       <div className="text-lg font-bold text-primary min-w-[60px] shrink-0">
+                         {format(parseISO(app.data), 'HH:mm')}
+                       </div>
+                       <div className="min-w-0 overflow-hidden">
+                         <div className="flex items-center gap-2">
+                           <span className="font-semibold text-card-foreground truncate">{app.patients?.nome || '---'}</span>
+                           <Badge variant="outline" className={`text-[10px] shrink-0 ${app.tipo === 'fisio' ? 'border-emerald-800 text-emerald-400' : app.tipo === 'externo' ? 'border-amber-800 text-amber-400' : 'border-blue-800 text-blue-400'}`}>
+                             {typeLabels[app.tipo]}
+                           </Badge>
+                         </div>
+                         {app.tipo === 'externo' && (
+                           <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 overflow-hidden">
+                             <MapPin className="h-3 w-3 shrink-0" />
+                             {app.patients?.endereco ? (
+                               <a
+                                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(app.patients.endereco)}`}
+                                 target="_blank"
+                                 rel="noreferrer"
+                                 className="text-primary hover:text-primary/80 flex items-center gap-0.5 truncate"
+                               >
+                                 {app.patients.endereco} <ExternalLink className="h-3 w-3 shrink-0" />
+                               </a>
+                               ) : 'Endereço externo'}
+                           </div>
+                         )}
+                         {app.valor && (
+                           <div className="text-xs text-muted-foreground mt-1 truncate">
+                             R$ {Number(app.valor).toFixed(2)}
+                             {app.forma_pagamento && ` • ${app.forma_pagamento === 'pix' ? 'Pix' : app.forma_pagamento === 'cartao' ? 'Cartão' : 'Dinheiro'}`}
+                           </div>
+                         )}
+                       </div>
+                     </div>
+
+                     <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
+                       {app.status === 'agendado' && (
+                         <>
+                           <Button size="xs" onClick={() => openFinishModal(app)}
+                             className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 shrink-0">
+                             <CheckCircle2 className="h-3 w-3" /> Finalizar
+                           </Button>
+                           <Button variant="ghost" size="icon-xs"
+                             onClick={() => handleDelete(app.id)}
+                             className="text-muted-foreground hover:text-red-400 shrink-0">
+                             <Trash2 className="h-3.5 w-3.5" />
+                           </Button>
+                         </>
+                       )}
+                       {app.status === 'concluido' && (
+                         <>
+                           <Badge className="bg-muted text-muted-foreground border-border shrink-0">Concluído</Badge>
+                           <Button variant="ghost" size="icon-xs"
+                             onClick={() => handleDelete(app.id)}
+                             className="text-muted-foreground hover:text-red-400 shrink-0">
+                             <Trash2 className="h-3.5 w-3.5" />
+                           </Button>
+                         </>
+                       )}
+                     </div>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : !isLoading && (
-        <div className="text-center py-12 text-muted-foreground">
-          Nenhum atendimento nesta semana
-        </div>
+        <EmptyState
+          icon={CalendarDays}
+          title="Nenhum atendimento nesta semana"
+          description="Crie um novo atendimento tocando em um dia do calendário acima."
+          action={(
+            <Button onClick={() => openCreateForDate(new Date())} className="bg-primary hover:bg-primary/90 text-white gap-2">
+              <PawPrint className="h-4 w-4" /> Novo Atendimento
+            </Button>
+          )}
+        />
       )}
 
       {isLoading && (
@@ -376,7 +383,7 @@ export default function AgendaPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-foreground">Data</Label>
                 <Input type="date" value={selectedDate} disabled className="bg-muted border-border text-card-foreground" />
@@ -457,7 +464,7 @@ export default function AgendaPage() {
 
               <div className="space-y-2">
                 <Label className="text-foreground">Forma de Pagamento</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {[
                     { value: 'pix', label: 'Pix', icon: '💳' },
                     { value: 'cartao', label: 'Cartão', icon: '💳' },
@@ -469,7 +476,7 @@ export default function AgendaPage() {
                       onClick={() => setFinishPayment(finishPayment === option.value ? '' : option.value)}
                       className={`p-3 rounded-lg border text-center transition-all ${
                         finishPayment === option.value
-                          ? 'border-indigo-500 bg-indigo-600/20 text-indigo-400'
+                          ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border bg-muted text-muted-foreground hover:border-border'
                       }`}
                     >
@@ -493,7 +500,7 @@ export default function AgendaPage() {
                   </Button>
                 </DialogClose>
                 <Button onClick={handleConfirmFinish} disabled={updateAppointment.isPending}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+                className="bg-primary hover:bg-primary/90 text-white gap-2">
                   {updateAppointment.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   <CheckCircle2 className="h-4 w-4" /> Confirmar
                 </Button>

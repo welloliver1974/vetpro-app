@@ -4,11 +4,14 @@
 -- 1. Tabela de clínicas
 create table if not exists clinics (
   id uuid default uuid_generate_v4() primary key,
+  owner_id uuid references profiles(id) not null,
   nome text not null,
   endereco text,
   telefone text,
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+alter table clinics add column if not exists owner_id uuid references profiles(id);
 
 -- 2. Adicionar clinic_id ao perfil
 alter table profiles add column if not exists clinic_id uuid references clinics(id);
@@ -34,25 +37,38 @@ create policy "Membros veem sua clínica"
     id = (select clinic_id from profiles where id = auth.uid())
   );
 
-create policy "Criador pode atualizar clínica"
-  on clinics for update using (
-    id = (select clinic_id from profiles where id = auth.uid())
+create policy "Dono pode atualizar clínica"
+  on clinics for update using (owner_id = auth.uid());
+
+create policy "Dono pode deletar clínica"
+  on clinics for delete using (owner_id = auth.uid());
+
+-- RLS: perfis da clínica
+create policy "Membros veem perfis da clínica"
+  on profiles for select using (
+    auth.uid() = id
+    or clinic_id = (select clinic_id from profiles where id = auth.uid())
   );
 
 -- RLS: convites
-create policy "Membros veem convites da clínica"
+create policy "Dono vê convites da clínica"
   on clinic_invites for select using (
-    clinic_id = (select clinic_id from profiles where id = auth.uid())
+    clinic_id in (select id from clinics where owner_id = auth.uid())
   );
 
-create policy "Membros podem criar convites"
+create policy "Dono pode criar convites"
   on clinic_invites for insert with check (
-    clinic_id = (select clinic_id from profiles where id = auth.uid())
+    clinic_id in (select id from clinics where owner_id = auth.uid())
   );
 
-create policy "Membros podem atualizar convites"
+create policy "Dono pode atualizar convites"
   on clinic_invites for update using (
-    clinic_id = (select clinic_id from profiles where id = auth.uid())
+    clinic_id in (select id from clinics where owner_id = auth.uid())
+  );
+
+create policy "Dono pode deletar convites"
+  on clinic_invites for delete using (
+    clinic_id in (select id from clinics where owner_id = auth.uid())
   );
 
 -- RLS atualizado para pacientes (agora inclui colegas de clínica)

@@ -26,11 +26,11 @@ export type ProtocolInput = {
 async function fetchProtocols(): Promise<Protocol[]> {
   const { data, error } = await supabase
     .from('protocols')
-    .select('*, equipments(nome, modelo)')
+    .select('id, equipamento_id, nome, descricao, configuracoes_padrao, created_at, equipments(nome, modelo)')
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return data
+  return data as unknown as Protocol[]
 }
 
 async function createProtocol(input: ProtocolInput) {
@@ -40,11 +40,11 @@ async function createProtocol(input: ProtocolInput) {
   const { data, error } = await supabase
     .from('protocols')
     .insert([{ ...input, vet_id: user.id }])
-    .select('*, equipments(nome, modelo)')
+    .select('id, equipamento_id, nome, descricao, configuracoes_padrao, created_at, equipments(nome, modelo)')
     .single()
 
   if (error) throw error
-  return data
+  return data as unknown as Protocol
 }
 
 async function updateProtocol(id: string, input: Partial<ProtocolInput>) {
@@ -52,11 +52,11 @@ async function updateProtocol(id: string, input: Partial<ProtocolInput>) {
     .from('protocols')
     .update(input)
     .eq('id', id)
-    .select('*, equipments(nome, modelo)')
+    .select('id, equipamento_id, nome, descricao, configuracoes_padrao, created_at, equipments(nome, modelo)')
     .single()
 
   if (error) throw error
-  return data
+  return data as unknown as Protocol
 }
 
 async function deleteProtocol(id: string) {

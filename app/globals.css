@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-family-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -49,6 +49,7 @@
 }
 
 :root {
+  --font-family-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   --background: oklch(0.97 0.015 250);
   --foreground: oklch(0.18 0.03 250);
   --card: oklch(0.99 0.005 250);
@@ -79,14 +80,15 @@
 }
 
 .dark {
+  --font-family-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   --background: oklch(0.11 0.03 260);
   --foreground: oklch(0.97 0.005 260);
   --card: oklch(0.16 0.025 260);
   --card-foreground: oklch(0.97 0.005 260);
   --popover: oklch(0.16 0.025 260);
   --popover-foreground: oklch(0.97 0.005 260);
-  --primary: oklch(0.92 0.005 260);
-  --primary-foreground: oklch(0.11 0.03 260);
+  --primary: oklch(0.42 0.15 260);
+  --primary-foreground: oklch(0.97 0.015 250);
   --secondary: oklch(0.22 0.025 260);
   --secondary-foreground: oklch(0.97 0.005 260);
   --muted: oklch(0.22 0.025 260);
@@ -116,5 +118,117 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+.only-print {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm;
+  }
+
+  :root {
+    --background: oklch(1 0 0) !important;
+    --foreground: oklch(0.15 0 0) !important;
+    --card: oklch(1 0 0) !important;
+    --card-foreground: oklch(0.15 0 0) !important;
+    --muted: oklch(0.96 0 0) !important;
+    --muted-foreground: oklch(0.45 0 0) !important;
+    --border: oklch(0.85 0 0) !important;
+    --primary: oklch(0.25 0.06 260) !important;
+    --primary-foreground: oklch(1 0 0) !important;
+    --radius: 0 !important;
+  }
+
+  .dark {
+    --background: oklch(1 0 0) !important;
+    --foreground: oklch(0.15 0 0) !important;
+    --card: oklch(1 0 0) !important;
+    --card-foreground: oklch(0.15 0 0) !important;
+    --muted: oklch(0.96 0 0) !important;
+    --muted-foreground: oklch(0.45 0 0) !important;
+    --border: oklch(0.85 0 0) !important;
+    --primary: oklch(0.25 0.06 260) !important;
+    --primary-foreground: oklch(1 0 0) !important;
+    --popover: oklch(1 0 0) !important;
+    --popover-foreground: oklch(0.15 0 0) !important;
+    --secondary: oklch(0.94 0 0) !important;
+    --secondary-foreground: oklch(0.15 0 0) !important;
+    --accent: oklch(0.94 0 0) !important;
+    --accent-foreground: oklch(0.15 0 0) !important;
+    --destructive: oklch(0.55 0.2 27) !important;
+    --input: oklch(0.85 0 0) !important;
+    --ring: oklch(0.55 0.12 250) !important;
+    --sidebar: oklch(1 0 0) !important;
+    --sidebar-foreground: oklch(0.15 0 0) !important;
+    --sidebar-primary: oklch(0.25 0.06 260) !important;
+    --sidebar-primary-foreground: oklch(1 0 0) !important;
+    --sidebar-accent: oklch(0.94 0 0) !important;
+    --sidebar-accent-foreground: oklch(0.15 0 0) !important;
+    --sidebar-border: oklch(0.85 0 0) !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .only-print {
+    display: block !important;
+  }
+
+  nav,
+  header,
+  button,
+  [role='dialog'],
+  [data-state='closed'],
+  [data-radix-popper-content-wrapper] {
+    display: none !important;
+  }
+
+  [class*='sidebar'] {
+    display: none !important;
+  }
+
+  [class*='md:ml-'] {
+    margin-left: 0 !important;
+  }
+
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  a[href]::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.75em;
+    color: #555;
+  }
+
+  a[href^='#']::after,
+  a[href^='javascript:']::after {
+    content: '';
+  }
+
+  table {
+    font-size: 9pt;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr,
+  .card {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    break-after: avoid;
   }
 }

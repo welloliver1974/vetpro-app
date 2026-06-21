@@ -20,7 +20,7 @@ export const getProfile = cache(async () => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, nome, especialidade, clinic_id, created_at')
     .eq('id', session.userId)
     .single()
 

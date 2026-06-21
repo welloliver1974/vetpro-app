@@ -43,34 +43,34 @@ async function fetchSessionsByPatient(patientId: string): Promise<Session[]> {
   const ids = appointments.map((a) => a.id)
   const { data, error } = await supabase
     .from('sessions')
-    .select('*, appointments!inner(id, data, tipo, patients!inner(nome, especie))')
+    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, foto_urls, created_at, appointments!inner(id, data, tipo, valor, patients!inner(nome, especie))')
     .in('appointment_id', ids)
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return data || []
+  return (data || []) as unknown as Session[]
 }
 
 async function fetchSessionsByAppointment(appointmentId: string): Promise<Session[]> {
   const { data, error } = await supabase
     .from('sessions')
-    .select('*')
+    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, foto_urls, created_at')
     .eq('appointment_id', appointmentId)
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return data || []
+  return (data || []) as unknown as Session[]
 }
 
 async function createSession(input: SessionInput) {
   const { data, error } = await supabase
     .from('sessions')
     .insert([input])
-    .select()
+    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, foto_urls, created_at')
     .single()
 
   if (error) throw error
-  return data
+  return data as unknown as Session
 }
 
 async function updateSession(id: string, input: Partial<SessionInput & { foto_urls: string[] }>) {
@@ -78,11 +78,11 @@ async function updateSession(id: string, input: Partial<SessionInput & { foto_ur
     .from('sessions')
     .update(input)
     .eq('id', id)
-    .select()
+    .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, foto_urls, created_at')
     .single()
 
   if (error) throw error
-  return data
+  return data as unknown as Session
 }
 
 export async function uploadFile(file: File, path: string): Promise<string> {

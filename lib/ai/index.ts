@@ -1,4 +1,5 @@
-import { PROVIDERS, type AiConfig, type ProviderId } from './config'
+import { PROVIDERS, loadConfigAsync, type AiConfig, type ProviderId } from './config'
+import type { AiConfig as AiConfigType } from './config'
 
 class AiError extends Error {
   constructor(message: string, public status?: number) {
@@ -7,11 +8,9 @@ class AiError extends Error {
   }
 }
 
-function getConfig(): AiConfig {
-  if (typeof window === 'undefined') throw new AiError('AI só funciona no cliente')
-  const raw = localStorage.getItem('vetpro_ai_config')
-  if (!raw) throw new AiError('Configure sua chave de API em Configurações')
-  const config = JSON.parse(raw) as AiConfig
+async function getConfig(): Promise<AiConfigType> {
+  const config = await loadConfigAsync()
+  if (!config) throw new AiError('Configure sua chave de API em Configurações')
   if (!config.apiKey) throw new AiError('API key não configurada')
   return config
 }
@@ -25,7 +24,7 @@ function getProvider(providerId: ProviderId) {
 // ─── Chat (Text Generation) ───
 
 export async function chat(prompt: string, systemPrompt?: string): Promise<string> {
-  const config = getConfig()
+  const config = await getConfig()
   const provider = getProvider(config.provider)
 
   switch (config.provider) {
@@ -120,7 +119,7 @@ async function geminiChat(
 // ─── Transcription ───
 
 export async function transcribeAudio(audioBlob: Blob): Promise<string> {
-  const config = getConfig()
+  const config = await getConfig()
   const provider = getProvider(config.provider)
 
   if (!provider.supportsTranscription) {
@@ -172,7 +171,7 @@ async function openaiTranscribe(config: AiConfig, baseUrl: string, audioBlob: Bl
 export async function analyzeImage(
   imageUrl: string, prompt: string
 ): Promise<string> {
-  const config = getConfig()
+  const config = await getConfig()
   const provider = getProvider(config.provider)
 
   switch (config.provider) {

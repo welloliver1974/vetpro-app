@@ -30,11 +30,11 @@ export type AppointmentInput = {
 async function fetchAppointments(): Promise<Appointment[]> {
   const { data, error } = await supabase
     .from('appointments')
-    .select('*, patients(nome, especie, endereco)')
+    .select('id, paciente_id, data, tipo, status, valor, forma_pagamento, assinatura_url, created_at, patients(nome, especie, endereco)')
     .order('data', { ascending: true })
 
   if (error) throw error
-  return data
+  return data as unknown as Appointment[]
 }
 
 async function createAppointment(input: AppointmentInput) {
@@ -44,11 +44,11 @@ async function createAppointment(input: AppointmentInput) {
   const { data, error } = await supabase
     .from('appointments')
     .insert([{ ...input, vet_id: user.id }])
-    .select('*, patients(nome, especie, endereco)')
+    .select('id, paciente_id, data, tipo, status, valor, forma_pagamento, assinatura_url, created_at, patients(nome, especie, endereco)')
     .single()
 
   if (error) throw error
-  return data
+  return data as unknown as Appointment
 }
 
 async function updateAppointment(id: string, updates: Partial<Appointment>) {
@@ -56,11 +56,11 @@ async function updateAppointment(id: string, updates: Partial<Appointment>) {
     .from('appointments')
     .update(updates)
     .eq('id', id)
-    .select('*, patients(nome, especie, endereco)')
+    .select('id, paciente_id, data, tipo, status, valor, forma_pagamento, assinatura_url, created_at, patients(nome, especie, endereco)')
     .single()
 
   if (error) throw error
-  return data
+  return data as unknown as Appointment
 }
 
 async function deleteAppointment(id: string) {

@@ -1,16 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ComponentType } from 'react'
 import { useParams } from 'next/navigation'
+import Image from 'next/image'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { usePatients } from '@/hooks/usePatients'
+import { usePatients, useUpdatePatient } from '@/hooks/usePatients'
 import { useSessionsByPatient, useCreateSession, useUpdateSession, uploadFile } from '@/hooks/useSessions'
 import { useAppointments } from '@/hooks/useAppointments'
 import { useProtocols } from '@/hooks/useProtocols'
 import { useChat, useTranscription, useImageAnalysis } from '@/hooks/useAi'
 import { AudioRecorder } from '@/components/vet/AudioRecorder'
 import { ReportPDF } from '@/components/vet/ReportPDF'
+import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,11 +28,28 @@ import {
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from '@/components/ui/tabs'
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import {
   Loader2, Plus, ArrowLeft, Sparkles, ImageUp, ImageDown, ScanSearch, X,
+  PawPrint, Pencil, Heart, Weight, CalendarDays, FileText, AlertTriangle,
 } from 'lucide-react'
 import Link from 'next/link'
+
+interface AnamneseDraft {
+  queixa_principal: string
+  historico_doenca_atual: string
+  doencas_preexistentes: string
+  medicamentos_continuos: string
+  historico_cirurgico: string
+  alergias: string
+  vacinacao: string
+  observacoes: string
+  cor_pelagem: string
+  peso: number | null
+  microchip: string
+  data_nascimento: string
+  sexo: string
+}
 
 export default function PatientDetailPage() {
   const params = useParams()
@@ -38,6 +57,14 @@ export default function PatientDetailPage() {
 
   const { data: patients } = usePatients()
   const patient = patients?.find((p) => p.id === patientId)
+  const siblings = patient?.tutor_nome
+    ? patients?.filter(
+        (p) =>
+          p.id !== patientId &&
+          p.tutor_nome?.toLowerCase().trim() === patient.tutor_nome?.toLowerCase().trim() &&
+          (p.tutor_contato?.toLowerCase().trim() === patient.tutor_contato?.toLowerCase().trim() || !patient.tutor_contato)
+      ) ?? []
+    : []
   const { data: appointments } = useAppointments()
   const { data: sessions, isLoading } = useSessionsByPatient(patientId)
   const createSession = useCreateSession()
@@ -45,6 +72,30 @@ export default function PatientDetailPage() {
   const chatAi = useChat()
   const transcribeAi = useTranscription()
   const visionAi = useImageAnalysis()
+  const updatePatient = useUpdatePatient()
+
+  const [editingAnamnese, setEditingAnamnese] = useState(false)
+  const [anamneseDraft, setAnamneseDraft] = useState<AnamneseDraft | null>(null)
+
+  function startEditingAnamnese() {
+    if (!patient) return
+    setAnamneseDraft({
+      queixa_principal: patient.queixa_principal || '',
+      historico_doenca_atual: patient.historico_doenca_atual || '',
+      doencas_preexistentes: patient.doencas_preexistentes || '',
+      medicamentos_continuos: patient.medicamentos_continuos || '',
+      historico_cirurgico: patient.historico_cirurgico || '',
+      alergias: patient.alergias || '',
+      vacinacao: patient.vacinacao || '',
+      observacoes: patient.observacoes || '',
+      cor_pelagem: patient.cor_pelagem || '',
+      peso: patient.peso,
+      microchip: patient.microchip || '',
+      data_nascimento: patient.data_nascimento || '',
+      sexo: patient.sexo || '',
+    })
+    setEditingAnamnese(true)
+  }
 
   const [slot1, setSlot1] = useState<{ url: string; date: string } | null>(null)
   const [slot2, setSlot2] = useState<{ url: string; date: string } | null>(null)
@@ -113,6 +164,16 @@ export default function PatientDetailPage() {
     }
   }
 
+  async function handleSaveAnamnese() {
+    if (!anamneseDraft) return
+    await updatePatient.mutateAsync({
+      id: patientId,
+      data: anamneseDraft,
+    })
+    setEditingAnamnese(false)
+    setAnamneseDraft(null)
+  }
+
   if (!patient) {
     return (
       <div className="p-4 md:p-8 flex items-center justify-center min-h-[50vh]">
@@ -123,10 +184,9 @@ export default function PatientDetailPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <Toaster richColors position="top-center" />
 
       <div className="mb-6">
-        <Link href="/pacientes" className="text-sm text-muted-foreground hover:text-indigo-400 flex items-center gap-1 mb-2">
+        <Link href="/pacientes" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1 mb-2">
           <ArrowLeft className="h-3 w-3" /> Voltar
         </Link>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -144,103 +204,132 @@ export default function PatientDetailPage() {
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(patient.endereco)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-indigo-400 hover:text-indigo-300 ml-1"
+                  className="text-primary hover:text-primary/80 ml-1"
                 >
                   [Ver no Maps]
                 </a>
               </p>
             )}
           </div>
-          <div className="flex gap-2">
-            <ReportPDF
-              patient={patient}
-              sessions={sessions || []}
-              assinaturaUrl={patientAppointments.find((a) => a.assinatura_url)?.assinatura_url}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={chatAi.loading || !sessions?.length}
-              onClick={async () => {
-                const evolNotes = sessions
-                  ?.filter((s) => s.notas_evolucao)
-                  .slice(0, 10)
-                  .map((s, i) => `Sessão ${i + 1}: ${s.notas_evolucao}`)
-                  .join('\n\n')
-                if (!evolNotes) {
-                  toast.error('Nenhuma nota de evolução para gerar relatório')
-                  return
-                }
-                try {
-                  const report = await chatAi.generate(
-                    `Gere um relatório de evolução para o tutor do paciente veterinário abaixo:\n\n` +
-                    `Paciente: ${patient.nome} (${patient.especie || ''} ${patient.raca || ''})\n` +
-                    `Tutor: ${patient.tutor_nome || '---'}\n` +
-                    `Total de sessões: ${sessions?.length || 0}\n\n` +
-                    `Histórico de evolução:\n${evolNotes}\n\n` +
-                    `Escreva em linguagem clara para o tutor, destacando progressos e próximos passos.`
-                  )
-                  toast.success('Relatório gerado!', { duration: 8000 })
-                  setNotasEvolucao(report)
-                  setDialogOpen(true)
-                } catch (e) {
-                  toast.error(e instanceof Error ? e.message : 'Erro ao gerar relatório')
-                }
-              }}
-              className="border-indigo-700 text-indigo-400 hover:bg-indigo-950/30 gap-2"
-            >
-              {chatAi.loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              Relatório com IA
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={loadingPrevisao || !sessions?.length}
-              onClick={async () => {
-                if (!sessions?.length) return
-                setLoadingPrevisao(true)
-                try {
-                  const evol = sessions.filter((s) => s.notas_evolucao).slice(-5).map((s, i) => `Sessão ${i + 1}: ${s.notas_evolucao}`).join('\n\n')
-                  const pred = await chatAi.generate(
-                    `Paciente: ${patient.nome} (${patient.especie || ''})\n` +
-                    `Total de sessões realizadas: ${sessions.length}\n` +
-                    `Período: ${sessions.length > 1 ? `${format(parseISO(sessions[sessions.length - 1].created_at), 'dd/MM')} até ${format(parseISO(sessions[0].created_at), 'dd/MM')}` : 'apenas 1 sessão'}\n\n` +
-                    `Notas de evolução:\n${evol || 'Nenhuma nota disponível'}\n\n` +
-                    `Com base nesses dados, estime quantas sessões ainda são necessárias para concluir o tratamento e justifique.`,
-                    'Você é um fisioterapeuta veterinário. Seja objetivo e realista.'
-                  )
-                  setPrevisao(pred)
-                  setPrevisaoOpen(true)
-                } catch {
-                  toast.error('Erro ao gerar previsão')
-                } finally {
-                  setLoadingPrevisao(false)
-                }
-              }}
-              className="border-amber-700 text-amber-400 hover:bg-amber-950/30 gap-2"
-            >
-              {loadingPrevisao ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              Previsão de Sessões
-            </Button>
-            <Button onClick={() => setDialogOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
-              <Plus className="h-4 w-4" /> Nova Sessão
-            </Button>
-          </div>
+           <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full sm:w-auto">
+             <ReportPDF
+               patient={patient}
+               sessions={sessions || []}
+               assinaturaUrl={patientAppointments.find((a) => a.assinatura_url)?.assinatura_url}
+             />
+             <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 w-full sm:w-auto">
+               <Button
+                 variant="outline"
+                 size="sm"
+                 disabled={chatAi.loading || !sessions?.length}
+                 onClick={async () => {
+                   const evolNotes = sessions
+                     ?.filter((s) => s.notas_evolucao)
+                     .slice(0, 10)
+                     .map((s, i) => `Sessão ${i + 1}: ${s.notas_evolucao}`)
+                     .join('\n\n')
+                   if (!evolNotes) {
+                     toast.error('Nenhuma nota de evolução para gerar relatório')
+                     return
+                   }
+                   try {
+                     const report = await chatAi.generate(
+                       `Gere um relatório de evolução para o tutor do paciente veterinário abaixo:\n\n` +
+                       `Paciente: ${patient.nome} (${patient.especie || ''} ${patient.raca || ''})\n` +
+                       `Tutor: ${patient.tutor_nome || '---'}\n` +
+                       `Total de sessões: ${sessions?.length || 0}\n\n` +
+                       `Histórico de evolução:\n${evolNotes}\n\n` +
+                       `Escreva em linguagem clara para o tutor, destacando progressos e próximos passos.`
+                     )
+                     toast.success('Relatório gerado!', { duration: 8000 })
+                     setNotasEvolucao(report)
+                     setDialogOpen(true)
+                   } catch (e) {
+                     toast.error(e instanceof Error ? e.message : 'Erro ao gerar relatório')
+                   }
+                 }}
+                 className="border-primary/60 text-primary hover:bg-primary/10 gap-2 w-full sm:w-auto"
+               >
+                 {chatAi.loading ? (
+                   <Loader2 className="h-4 w-4 animate-spin" />
+                 ) : (
+                   <Sparkles className="h-4 w-4" />
+                 )}
+                 Relatório com IA
+               </Button>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 disabled={loadingPrevisao || !sessions?.length}
+                 onClick={async () => {
+                   if (!sessions?.length) return
+                   setLoadingPrevisao(true)
+                   try {
+                     const evol = sessions.filter((s) => s.notas_evolucao).slice(-5).map((s, i) => `Sessão ${i + 1}: ${s.notas_evolucao}`).join('\n\n')
+                     const pred = await chatAi.generate(
+                       `Paciente: ${patient.nome} (${patient.especie || ''})\n` +
+                       `Total de sessões realizadas: ${sessions.length}\n` +
+                       `Período: ${sessions.length > 1 ? `${format(parseISO(sessions.at(-1)!.created_at), 'dd/MM')} até ${format(parseISO(sessions[0].created_at), 'dd/MM')}` : 'apenas 1 sessão'}\n\n` +
+                       `Notas de evolução:\n${evol || 'Nenhuma nota disponível'}\n\n` +
+                       `Com base nesses dados, estime quantas sessões ainda são necessárias para concluir o tratamento e justifique.`,
+                       'Você é um fisioterapeuta veterinário. Seja objetivo e realista.'
+                     )
+                     setPrevisao(pred)
+                     setPrevisaoOpen(true)
+                   } catch {
+                     toast.error('Erro ao gerar previsão')
+                   } finally {
+                     setLoadingPrevisao(false)
+                   }
+                 }}
+                 className="border-amber-700 text-amber-400 hover:bg-amber-950/30 gap-2 w-full sm:w-auto"
+               >
+                 {loadingPrevisao ? (
+                   <Loader2 className="h-4 w-4 animate-spin" />
+                 ) : (
+                   <Sparkles className="h-4 w-4" />
+                 )}
+                 Previsão de Sessões
+               </Button>
+             </div>
+             <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto gap-2">
+               <Plus className="h-4 w-4" /> Nova Sessão
+             </Button>
+           </div>
         </div>
       </div>
 
+      {siblings.length > 0 && (
+        <Card className="bg-card border-border mb-6 no-print">
+          <CardContent className="p-4">
+            <h3 className="text-sm font-medium text-card-foreground mb-3 flex items-center gap-2">
+              <PawPrint className="h-4 w-4 text-primary" />
+              Outros pets de {patient.tutor_nome}
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {siblings.map((sibling) => (
+                <Link
+                  key={sibling.id}
+                  href={`/pacientes/${sibling.id}`}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm text-card-foreground hover:bg-accent transition-colors"
+                >
+                  <PawPrint className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="font-medium">{sibling.nome}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {[sibling.especie, sibling.raca].filter(Boolean).join(' - ')}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs defaultValue="sessoes" className="space-y-6">
-        <TabsList className="bg-card border border-border">
-          <TabsTrigger value="sessoes" className="text-muted-foreground data-[state=active]:text-indigo-400">Sessões</TabsTrigger>
-          <TabsTrigger value="galeria" className="text-muted-foreground data-[state=active]:text-indigo-400">Galeria de Evolução</TabsTrigger>
+        <TabsList className="bg-card border border-border grid grid-cols-3 w-full sm:w-auto">
+          <TabsTrigger value="sessoes" className="text-muted-foreground data-[state=active]:text-primary">Sessões</TabsTrigger>
+          <TabsTrigger value="galeria" className="text-muted-foreground data-[state=active]:text-primary">Galeria</TabsTrigger>
+          <TabsTrigger value="ficha" className="text-muted-foreground data-[state=active]:text-primary">Ficha Médica</TabsTrigger>
         </TabsList>
 
         {/* Sessões Tab */}
@@ -249,46 +338,42 @@ export default function PatientDetailPage() {
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : !sessions?.length ? (
-            <Card className="bg-card border-border">
-              <CardContent className="p-8 text-center text-muted-foreground">
-                Nenhuma sessão registrada ainda
-              </CardContent>
-            </Card>
-          ) : (
+          ) : sessions?.length ? (
             sessions.map((session) => {
               const app = patientAppointments.find((a) => a.id === session.appointment_id)
               return (
                 <Card key={session.id} className="bg-card border-border">
                   <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-sm text-card-foreground">
-                          {app ? format(parseISO(app.data), "d 'de' MMM 'às' HH:mm", { locale: ptBR }) : 'Data não encontrada'}
-                        </CardTitle>
-                        <p className="text-xs text-muted-foreground">
-                          {app?.tipo === 'fisio' ? 'Fisioterapia' : app?.tipo === 'externo' ? 'Externo' : 'Clínico'}
-                        </p>
-                        {session.protocolo_id && protocols?.find((p) => p.id === session.protocolo_id) && (
-                          <p className="text-xs text-indigo-400/70 mt-0.5">
-                            Protocolo: {protocols.find((p) => p.id === session.protocolo_id)?.nome}
-                          </p>
-                        )}
-                      </div>
-                      <Badge variant="outline" className="border-border text-muted-foreground text-[10px]">
-                    {session.foto_urls?.length || 0} mídias
-                  </Badge>
-                  <div className="text-right text-xs">
-                    {session.custo && (
-                      <p className="text-muted-foreground">Custo: R$ {Number(session.custo).toFixed(2)}</p>
-                    )}
-                    {session.custo && app?.valor && (
-                      <p className={Number(app.valor) - Number(session.custo) >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                        Margem: R$ {(Number(app.valor) - Number(session.custo)).toFixed(2)}
-                      </p>
-                    )}
-                  </div>
-                    </div>
+                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                         <div className="min-w-0">
+                           <CardTitle className="text-sm text-card-foreground truncate">
+                             {app ? format(parseISO(app.data), "d 'de' MMM 'às' HH:mm", { locale: ptBR }) : 'Data não encontrada'}
+                           </CardTitle>
+                           <p className="text-xs text-muted-foreground">
+                             {app?.tipo === 'fisio' ? 'Fisioterapia' : app?.tipo === 'externo' ? 'Externo' : 'Clínico'}
+                           </p>
+                           {session.protocolo_id && protocols?.find((p) => p.id === session.protocolo_id) && (
+                             <p className="text-xs text-primary/70 mt-0.5 truncate">
+                               Protocolo: {protocols.find((p) => p.id === session.protocolo_id)?.nome}
+                             </p>
+                           )}
+                         </div>
+                         <div className="flex items-center gap-2 shrink-0">
+                           <Badge variant="outline" className="border-border text-muted-foreground text-[10px]">
+                             {session.foto_urls?.length || 0} mídias
+                           </Badge>
+                           {session.custo && (
+                             <div className="text-right text-xs">
+                               <p className="text-muted-foreground">R$ {Number(session.custo).toFixed(2)}</p>
+                               {session.custo && app?.valor && (
+                                 <p className={Number(app.valor) - Number(session.custo) >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                                   M: {(Number(app.valor) - Number(session.custo)).toFixed(2)}
+                                 </p>
+                               )}
+                             </div>
+                           )}
+                         </div>
+                       </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {session.notas && (
@@ -307,17 +392,19 @@ export default function PatientDetailPage() {
                       <div>
                         <button
                           onClick={() => setExpandedSession(expandedSession === session.id ? null : session.id)}
-                          className="text-xs text-indigo-400 hover:text-indigo-300"
+                          className="text-xs text-primary hover:text-primary/80"
                         >
                           {expandedSession === session.id ? 'Ocultar fotos' : `Ver ${session.foto_urls.length} foto(s)`}
                         </button>
                         {expandedSession === session.id && (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                             {session.foto_urls.map((url, i) => (
                               <a key={i} href={url} target="_blank" rel="noreferrer">
-                                <img
+                                <Image
                                   src={url}
                                   alt={`Foto ${i + 1}`}
+                                  width={400}
+                                  height={300}
                                   className="rounded-lg border border-border w-full h-24 object-cover hover:opacity-80 transition-opacity"
                                 />
                               </a>
@@ -330,6 +417,17 @@ export default function PatientDetailPage() {
                 </Card>
               )
             })
+          ) : (
+            <EmptyState
+              icon={PawPrint}
+              title="Nenhuma sessão registrada ainda"
+              description="Registre a primeira sessão para começar a acompanhar evolução, fotos e notas clínicas."
+              action={
+                <Button onClick={() => setDialogOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" /> Nova Sessão
+                </Button>
+              }
+            />
           )}
         </TabsContent>
 
@@ -346,13 +444,13 @@ export default function PatientDetailPage() {
                 }))
               ) ?? []
 
-            if (!allPhotos.length) {
+            if (allPhotos.length === 0) {
               return (
-                <Card className="bg-card border-border">
-                  <CardContent className="p-8 text-center text-muted-foreground">
-                    Nenhuma mídia registrada
-                  </CardContent>
-                </Card>
+                <EmptyState
+                  icon={ImageUp}
+                  title="Nenhuma mídia registrada"
+                  description="Quando houver fotos ou vídeos nas sessões, eles vão aparecer aqui para comparação e acompanhamento."
+                />
               )
             }
 
@@ -360,8 +458,8 @@ export default function PatientDetailPage() {
               if (slot1?.url === photo.url) { setSlot1(null); return }
               if (slot2?.url === photo.url) { setSlot2(null); return }
               if (!slot1) setSlot1(photo)
-              else if (!slot2) setSlot2(photo)
-              else setSlot1(photo)
+              else if (slot2) {setSlot1(photo)}
+              else {setSlot2(photo)}
             }
 
             return (
@@ -369,7 +467,7 @@ export default function PatientDetailPage() {
                 {/* Comparison toolbar */}
                 <Card className="bg-card border-border">
                   <CardContent className="p-4">
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] xl:items-center">
                       {/* Slot 1 - Antes */}
                       <div className="flex-1 w-full">
                         <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
@@ -377,44 +475,44 @@ export default function PatientDetailPage() {
                         </p>
                         {slot1 ? (
                           <div className="relative">
-                            <img src={slot1.url} alt="Antes" className="w-full h-24 object-cover rounded-lg border border-border" />
+                            <Image src={slot1.url} alt="Antes" width={400} height={300} className="w-full h-32 sm:h-24 object-cover rounded-lg border border-border" />
                             <button onClick={() => setSlot1(null)} className="absolute top-1 right-1 bg-black/60 rounded p-0.5">
                               <X className="h-3 w-3 text-foreground" />
                             </button>
                             <span className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-foreground px-1 py-0.5 rounded">{slot1.date}</span>
                           </div>
                         ) : (
-                          <div className="w-full h-24 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-slate-600">
+                          <div className="w-full h-32 sm:h-24 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground">
                             Clique numa foto
                           </div>
                         )}
                       </div>
-
+                      
                       {/* VS */}
-                      <div className="hidden md:flex items-center justify-center">
+                      <div className="hidden xl:flex items-center justify-center">
                         <ScanSearch className="h-6 w-6 text-blue-500" />
                       </div>
-
+                      
                       {/* Slot 2 - Depois */}
                       <div className="flex-1 w-full">
                         <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                          <ImageDown className="h-3 w-3 text-indigo-400" /> Depois
+                          <ImageDown className="h-3 w-3 text-primary" /> Depois
                         </p>
                         {slot2 ? (
                           <div className="relative">
-                            <img src={slot2.url} alt="Depois" className="w-full h-24 object-cover rounded-lg border border-border" />
+                            <Image src={slot2.url} alt="Depois" width={400} height={300} className="w-full h-32 sm:h-24 object-cover rounded-lg border border-border" />
                             <button onClick={() => setSlot2(null)} className="absolute top-1 right-1 bg-black/60 rounded p-0.5">
                               <X className="h-3 w-3 text-foreground" />
                             </button>
                             <span className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-foreground px-1 py-0.5 rounded">{slot2.date}</span>
                           </div>
                         ) : (
-                          <div className="w-full h-24 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-slate-600">
+                          <div className="w-full h-32 sm:h-24 rounded-lg border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground">
                             Clique numa foto
                           </div>
                         )}
                       </div>
-
+                      
                       {/* Analyze button */}
                       <Button
                         disabled={!slot1 || !slot2 || visionAi.loading}
@@ -434,7 +532,7 @@ export default function PatientDetailPage() {
                             toast.error(e instanceof Error ? e.message : 'Erro ao analisar fotos')
                           }
                         }}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shrink-0"
+                        className="bg-primary hover:bg-primary/90 text-white gap-2 shrink-0 w-full xl:w-auto"
                       >
                         {visionAi.loading ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -447,9 +545,9 @@ export default function PatientDetailPage() {
 
                     {/* Analysis result */}
                     {analysisResult && (
-                      <div className="mt-4 p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/50">
+                      <div className="mt-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-xs text-indigo-400 font-medium mb-1">🔍 Análise de Evolução</p>
+                          <p className="text-xs text-primary font-medium mb-1">🔍 Análise de Evolução</p>
                           <button onClick={() => setAnalysisResult(null)} className="text-muted-foreground hover:text-foreground">
                             <X className="h-3 w-3" />
                           </button>
@@ -461,7 +559,7 @@ export default function PatientDetailPage() {
                 </Card>
 
                 {/* Photo grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {allPhotos.map((photo, idx) => {
                     const isSlot1 = slot1?.url === photo.url
                     const isSlot2 = slot2?.url === photo.url
@@ -478,15 +576,17 @@ export default function PatientDetailPage() {
                         }}
                         className="relative group text-left"
                       >
-                        <img
+                        <Image
                           src={photo.url}
                           alt={`Evolução ${photo.date}`}
+                          width={640}
+                          height={480}
                           className={`rounded-lg border w-full h-32 object-cover transition-all ${
                             isSlot1
                               ? 'border-emerald-500 ring-2 ring-emerald-500/50'
                               : isSlot2
-                              ? 'border-indigo-500 ring-2 ring-indigo-500/50'
-                              : 'border-border group-hover:border-slate-500'
+                              ? 'border-primary ring-2 ring-primary/50'
+                              : 'border-border group-hover:border-border'
                           }`}
                         />
                         <div className="absolute bottom-1 left-1 bg-black/60 text-[10px] text-foreground px-1.5 py-0.5 rounded">
@@ -498,7 +598,7 @@ export default function PatientDetailPage() {
                           </div>
                         )}
                         {isSlot2 && (
-                          <div className="absolute top-1 right-1 bg-indigo-600 text-[10px] text-white px-1.5 py-0.5 rounded font-medium">
+                          <div className="absolute top-1 right-1 bg-primary text-[10px] text-white px-1.5 py-0.5 rounded font-medium">
                             Depois
                           </div>
                         )}
@@ -510,6 +610,186 @@ export default function PatientDetailPage() {
             )
           })()}
         </TabsContent>
+
+        {/* Ficha Médica Tab */}
+        <TabsContent value="ficha" className="space-y-6">
+          <Card className="bg-card border-border">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">Identificação</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={updatePatient.isPending}
+                onClick={() => {
+                  if (editingAnamnese) {
+                    handleSaveAnamnese()
+                  } else {
+                    startEditingAnamnese()
+                  }
+                }}
+                className="gap-2"
+              >
+                {updatePatient.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Pencil className="h-4 w-4" />
+                )}
+                {editingAnamnese ? 'Salvar' : 'Editar'}
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <CalendarDays className="h-3 w-3" /> Data de Nascimento
+                  </p>
+                  {editingAnamnese ? (
+                    <Input
+                      type="date"
+                      value={anamneseDraft?.data_nascimento ?? ''}
+                      onChange={(e) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, data_nascimento: e.target.value } : f)}
+                      className="h-8 text-sm"
+                    />
+                  ) : (
+                    <p className="text-sm text-card-foreground">
+                      {patient.data_nascimento ? format(parseISO(patient.data_nascimento), 'dd/MM/yyyy') : '—'}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Sexo</p>
+                  {editingAnamnese ? (
+                    <select
+                      value={anamneseDraft?.sexo ?? ''}
+                      onChange={(e) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, sexo: e.target.value } : f)}
+                      className="w-full rounded-lg border border-border bg-muted text-card-foreground px-3 py-1.5 text-sm"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="macho">Macho</option>
+                      <option value="femea">Fêmea</option>
+                    </select>
+                  ) : (
+                    <p className="text-sm text-card-foreground">
+                      {patient.sexo ? (patient.sexo === 'macho' ? 'Macho' : 'Fêmea') : '—'}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Weight className="h-3 w-3" /> Peso (kg)
+                  </p>
+                  {editingAnamnese ? (
+                    <Input
+                      type="number" step="0.01" min="0"
+                      value={anamneseDraft?.peso ?? ''}
+                      onChange={(e) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, peso: e.target.value ? Number(e.target.value) : null } : f)}
+                      className="h-8 text-sm"
+                      placeholder="0.00"
+                    />
+                  ) : (
+                    <p className="text-sm text-card-foreground">{patient.peso ? `${patient.peso} kg` : '—'}</p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Microchip</p>
+                  {editingAnamnese ? (
+                    <Input
+                      value={anamneseDraft?.microchip ?? ''}
+                      onChange={(e) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, microchip: e.target.value } : f)}
+                      className="h-8 text-sm"
+                      placeholder="Nº do microchip"
+                    />
+                  ) : (
+                    <p className="text-sm text-card-foreground">{patient.microchip || '—'}</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Heart className="h-4 w-4 text-primary" /> Anamnese
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <AnamneseField
+                  label="Queixa Principal"
+                  icon={AlertTriangle}
+                  value={anamneseDraft?.queixa_principal ?? patient.queixa_principal ?? ''}
+                  editing={editingAnamnese}
+                  onChange={(v) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, queixa_principal: v } : f)}
+                />
+                <AnamneseField
+                  label="Histórico da Doença Atual"
+                  icon={FileText}
+                  value={anamneseDraft?.historico_doenca_atual ?? patient.historico_doenca_atual ?? ''}
+                  editing={editingAnamnese}
+                  onChange={(v) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, historico_doenca_atual: v } : f)}
+                />
+                <AnamneseField
+                  label="Doenças Preexistentes"
+                  icon={Heart}
+                  value={anamneseDraft?.doencas_preexistentes ?? patient.doencas_preexistentes ?? ''}
+                  editing={editingAnamnese}
+                  onChange={(v) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, doencas_preexistentes: v } : f)}
+                />
+                <AnamneseField
+                  label="Medicamentos Contínuos"
+                  icon={FileText}
+                  value={anamneseDraft?.medicamentos_continuos ?? patient.medicamentos_continuos ?? ''}
+                  editing={editingAnamnese}
+                  onChange={(v) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, medicamentos_continuos: v } : f)}
+                />
+                <AnamneseField
+                  label="Histórico Cirúrgico"
+                  icon={FileText}
+                  value={anamneseDraft?.historico_cirurgico ?? patient.historico_cirurgico ?? ''}
+                  editing={editingAnamnese}
+                  onChange={(v) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, historico_cirurgico: v } : f)}
+                />
+                <AnamneseField
+                  label="Alergias"
+                  icon={AlertTriangle}
+                  value={anamneseDraft?.alergias ?? patient.alergias ?? ''}
+                  editing={editingAnamnese}
+                  onChange={(v) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, alergias: v } : f)}
+                />
+                <AnamneseField
+                  label="Vacinação"
+                  icon={FileText}
+                  value={anamneseDraft?.vacinacao ?? patient.vacinacao ?? ''}
+                  editing={editingAnamnese}
+                  onChange={(v) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, vacinacao: v } : f)}
+                />
+                <AnamneseField
+                  label="Cor/Pelagem"
+                  icon={FileText}
+                  value={anamneseDraft?.cor_pelagem ?? patient.cor_pelagem ?? ''}
+                  editing={editingAnamnese}
+                  onChange={(v) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, cor_pelagem: v } : f)}
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <FileText className="h-3 w-3" /> Observações
+                </p>
+                {editingAnamnese ? (
+                  <Textarea
+                    value={anamneseDraft?.observacoes ?? ''}
+                    onChange={(e) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, observacoes: e.target.value } : f)}
+                    placeholder="Observações gerais..."
+                    rows={3}
+                  />
+                ) : (
+                  <p className="text-sm text-card-foreground whitespace-pre-wrap">{patient.observacoes || '—'}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Nova Sessão Dialog */}
@@ -519,7 +799,7 @@ export default function PatientDetailPage() {
             <DialogTitle>Nova Sessão - {patient.nome}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreateSession} className="space-y-4">
-            <div className="space-y-2">
+                <div className="space-y-2">
               <Label className="text-foreground">Atendimento</Label>
               <select
                 value={selectedAppointment}
@@ -587,7 +867,7 @@ export default function PatientDetailPage() {
                         toast.error(e instanceof Error ? e.message : 'Erro ao analisar')
                       }
                     }}
-                    className="border-indigo-700 text-indigo-400 hover:bg-indigo-950/30 gap-1"
+                className="border-primary/60 text-primary hover:bg-primary/10 gap-1"
                   >
                     {chatAi.loading ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -608,7 +888,7 @@ export default function PatientDetailPage() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <Label className="text-foreground">Notas de Evolução</Label>
                 <Button
                   type="button"
@@ -627,7 +907,7 @@ export default function PatientDetailPage() {
                       toast.error(e instanceof Error ? e.message : 'Erro ao gerar evolução')
                     }
                   }}
-                  className="text-indigo-400 hover:text-indigo-300 gap-1"
+                  className="text-primary hover:text-primary/80 gap-1"
                 >
                   {chatAi.loading ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -665,7 +945,7 @@ export default function PatientDetailPage() {
                 multiple
                 accept="image/*,video/*"
                 onChange={(e) => setFiles(Array.from(e.target.files || []))}
-                className="bg-muted border-border text-card-foreground file:bg-indigo-600 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:text-xs file:font-medium"
+                className="bg-muted border-border text-card-foreground file:bg-primary file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:text-xs file:font-medium"
               />
               {files.length > 0 && (
                 <p className="text-xs text-muted-foreground">{files.length} arquivo(s) selecionado(s)</p>
@@ -679,7 +959,7 @@ export default function PatientDetailPage() {
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={uploading || createSession.isPending}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                className="bg-primary hover:bg-primary/90 text-white">
                 {(uploading || createSession.isPending) && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 Salvar Sessão
               </Button>
@@ -703,6 +983,38 @@ export default function PatientDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  )
+}
+
+function AnamneseField({
+  label,
+  icon: Icon,
+  value,
+  editing,
+  onChange,
+}: {
+  label: string
+  icon: ComponentType<{ className?: string }>
+  value: string
+  editing: boolean
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs text-muted-foreground flex items-center gap-1">
+        <Icon className="h-3 w-3" /> {label}
+      </p>
+      {editing ? (
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={label}
+          rows={2}
+        />
+      ) : (
+        <p className="text-sm text-card-foreground whitespace-pre-wrap">{value || '—'}</p>
+      )}
     </div>
   )
 }

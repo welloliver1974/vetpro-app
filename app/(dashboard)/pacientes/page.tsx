@@ -14,8 +14,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Toaster } from 'sonner'
-import { Plus, Pencil, Trash2, Loader2, Search, AlertCircle } from 'lucide-react'
+import { EmptyState } from '@/components/EmptyState'
+import { Plus, Pencil, Trash2, Loader2, Search, AlertCircle, PawPrint } from 'lucide-react'
 import { patientSchema } from '@/lib/validations'
 
 export default function PatientsPage() {
@@ -27,6 +27,8 @@ export default function PatientsPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const perPage = 10
+  const tutorNames = [...new Set(patients?.map((p) => p.tutor_nome).filter((n): n is string => !!n) ?? [])]
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Patient | null>(null)
   const [form, setForm] = useState<PatientInput>({
@@ -101,14 +103,13 @@ export default function PatientsPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <Toaster richColors position="top-center" />
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Pacientes</h1>
           <p className="text-sm text-muted-foreground">Gerencie seus pacientes</p>
         </div>
-        <Button onClick={openCreate} className="bg-primary hover:bg-primary/90 text-white gap-2">
+        <Button onClick={openCreate} className="gap-2">
           <Plus className="h-4 w-4" /> Novo Paciente
         </Button>
       </div>
@@ -127,7 +128,30 @@ export default function PatientsPage() {
       {/* Table */}
       <Card className="bg-card border-border">
         <CardContent className="p-0">
-          <Table>
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-12">
+              <EmptyState
+                icon={PawPrint}
+                title={patients?.length ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
+                description={
+                  patients?.length
+                    ? 'Tente ajustar a busca ou crie um novo paciente para continuar.'
+                    : 'Cadastre o primeiro paciente para começar a montar a agenda e as sessões.'
+                }
+                action={
+                  <Button onClick={openCreate} className="gap-2">
+                    <Plus className="h-4 w-4" /> Novo Paciente
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+          <div className="overflow-x-auto">
+          <Table className="min-w-[720px]">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground">Nome</TableHead>
@@ -138,68 +162,56 @@ export default function PatientsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                  </TableCell>
-                </TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    Nenhum paciente encontrado
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginated.map((patient) => (
-                  <TableRow key={patient.id} className="border-border hover:bg-muted/50">
-                    <TableCell className="font-medium text-card-foreground">
-                    <Link href={`/pacientes/${patient.id}`} className="hover:text-blue-400 transition-colors">
+              {paginated.map((patient) => (
+                <TableRow key={patient.id} className="border-border hover:bg-muted/50">
+                  <TableCell className="font-medium text-card-foreground">
+                    <Link href={`/pacientes/${patient.id}`} className="hover:text-primary transition-colors">
                       {patient.nome}
                     </Link>
                   </TableCell>
-                    <TableCell className="text-muted-foreground hidden md:table-cell">
-                      {patient.especie && (
-                        <Badge variant="outline" className="border-border text-foreground">
-                          {patient.especie}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden md:table-cell">{patient.raca || '-'}</TableCell>
-                    <TableCell className="text-muted-foreground">{patient.tutor_nome || '-'}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost" size="icon-xs"
-                          onClick={() => openEdit(patient)}
-                          className="text-muted-foreground hover:text-blue-400"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost" size="icon-xs"
-                          onClick={() => handleDelete(patient.id, patient.nome)}
-                          className="text-muted-foreground hover:text-red-400"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+                  <TableCell className="text-muted-foreground hidden md:table-cell">
+                    {patient.especie && (
+                      <Badge variant="outline" className="border-border text-foreground">
+                        {patient.especie}
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground hidden md:table-cell">{patient.raca || '-'}</TableCell>
+                  <TableCell className="text-muted-foreground">{patient.tutor_nome || '-'}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost" size="icon-xs"
+                        onClick={() => openEdit(patient)}
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost" size="icon-xs"
+                        onClick={() => handleDelete(patient.id, patient.nome)}
+                        className="text-muted-foreground hover:text-red-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
+          </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Paginação */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4">
           <p className="text-xs text-muted-foreground">
             Mostrando {(page - 1) * perPage + 1}-{Math.min(page * perPage, filtered.length)} de {filtered.length}
           </p>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             <Button variant="outline" size="xs" disabled={page <= 1} onClick={() => setPage(page - 1)}
               className="border-border text-muted-foreground">
               Anterior
@@ -235,7 +247,7 @@ export default function PatientsPage() {
               />
               {errors.nome && <p className="text-xs text-destructive flex items-center gap-1 mt-1"><AlertCircle className="h-3 w-3" />{errors.nome}</p>}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-foreground">Espécie</Label>
                 <Input
@@ -260,8 +272,15 @@ export default function PatientsPage() {
               <Input
                 value={form.tutor_nome}
                 onChange={(e) => setForm({ ...form, tutor_nome: e.target.value })}
-                className="bg-muted border-border text-card-foreground"
+                list="tutor-names"
+                placeholder="Digite ou selecione um tutor existente"
+                className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground"
               />
+              <datalist id="tutor-names">
+                {tutorNames.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
             </div>
             <div className="space-y-2">
               <Label className="text-foreground">Contato do Tutor</Label>

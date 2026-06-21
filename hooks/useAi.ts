@@ -1,23 +1,31 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { chat, transcribeAudio, analyzeImage, testConnection } from '@/lib/ai'
-import { loadConfig, type AiConfig } from '@/lib/ai/config'
+import { loadConfigAsync, saveConfig as saveConfigStorage, clearConfig, type AiConfig } from '@/lib/ai/config'
 
 export function useAiConfig() {
-  const [config, setConfig] = useState<AiConfig | null>(() => loadConfig())
+  const [config, setConfig] = useState<AiConfig | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  function save(updated: AiConfig) {
-    localStorage.setItem('vetpro_ai_config', JSON.stringify(updated))
+  useEffect(() => {
+    loadConfigAsync().then((cfg) => {
+      setConfig(cfg)
+      setLoading(false)
+    })
+  }, [])
+
+  async function save(updated: AiConfig) {
+    await saveConfigStorage(updated)
     setConfig(updated)
   }
 
   function clear() {
-    localStorage.removeItem('vetpro_ai_config')
+    clearConfig()
     setConfig(null)
   }
 
-  return { config, save, clear }
+  return { config, save, clear, loading }
 }
 
 export function useChat() {

@@ -12,7 +12,29 @@ create table profiles (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 2. Patients
+-- 2. Clínicas
+create table clinics (
+  id uuid default uuid_generate_v4() primary key,
+  owner_id uuid references profiles(id) not null,
+  nome text not null,
+  endereco text,
+  telefone text,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+alter table profiles add column if not exists clinic_id uuid references clinics(id);
+
+create table clinic_invites (
+  id uuid default uuid_generate_v4() primary key,
+  clinic_id uuid references clinics(id) not null,
+  email text not null,
+  token text not null unique,
+  usado boolean default false,
+  created_by uuid references profiles(id),
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+-- 3. Patients
 create table patients (
   id uuid default uuid_generate_v4() primary key,
   vet_id uuid references profiles(id),
@@ -24,7 +46,7 @@ create table patients (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 3. Equipments
+-- 4. Equipments
 create table equipments (
   id uuid default uuid_generate_v4() primary key,
   vet_id uuid references profiles(id),
@@ -34,7 +56,7 @@ create table equipments (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 4. Protocols
+-- 5. Protocols
 create table protocols (
   id uuid default uuid_generate_v4() primary key,
   vet_id uuid references profiles(id),
@@ -45,7 +67,7 @@ create table protocols (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 5. Appointments
+-- 6. Appointments
 create table appointments (
   id uuid default uuid_generate_v4() primary key,
   vet_id uuid references profiles(id),
@@ -57,7 +79,7 @@ create table appointments (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 6. Sessions
+-- 7. Sessions
 create table sessions (
   id uuid default uuid_generate_v4() primary key,
   appointment_id uuid references appointments(id),
@@ -70,6 +92,8 @@ create table sessions (
 
 -- Habilitar RLS em todas as tabelas
 alter table profiles enable row level security;
+alter table clinics enable row level security;
+alter table clinic_invites enable row level security;
 alter table patients enable row level security;
 alter table equipments enable row level security;
 alter table protocols enable row level security;
@@ -83,6 +107,37 @@ create policy "Usuários podem inserir próprio perfil"
   on profiles for insert with check (auth.uid() = id);
 create policy "Usuários podem atualizar próprio perfil"
   on profiles for update using (auth.uid() = id);
+create policy "Membros veem perfis da clínica"
+  on profiles for select using (
+    auth.uid() = id
+    or clinic_id = (select clinic_id from profiles where id = auth.uid())
+  );
+
+create policy "Membros veem sua clínica"
+  on clinics for select using (
+    id = (select clinic_id from profiles where id = auth.uid())
+  );
+create policy "Dono pode atualizar clínica"
+  on clinics for update using (owner_id = auth.uid());
+create policy "Dono pode deletar clínica"
+  on clinics for delete using (owner_id = auth.uid());
+
+create policy "Dono vê convites da clínica"
+  on clinic_invites for select using (
+    clinic_id in (select id from clinics where owner_id = auth.uid())
+  );
+create policy "Dono pode criar convites"
+  on clinic_invites for insert with check (
+    clinic_id in (select id from clinics where owner_id = auth.uid())
+  );
+create policy "Dono pode atualizar convites"
+  on clinic_invites for update using (
+    clinic_id in (select id from clinics where owner_id = auth.uid())
+  );
+create policy "Dono pode deletar convites"
+  on clinic_invites for delete using (
+    clinic_id in (select id from clinics where owner_id = auth.uid())
+  );
 
 create policy "Vet vê seus pacientes"
   on patients for select using (auth.uid() = vet_id);
@@ -146,6 +201,8 @@ begin
   return new;
 end;
 $$ language plpgsql security definer;
+
+alter function public.handle_new_user() set search_path = public;
 
 create or replace trigger on_auth_user_created
   after insert on auth.users

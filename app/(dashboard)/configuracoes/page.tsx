@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import {
   PROVIDERS, getChatModels, type ProviderId, type AiConfig,
 } from '@/lib/ai/config'
@@ -17,11 +17,11 @@ import { useAiConfig } from '@/hooks/useAi'
 import { Loader2, CheckCircle2, XCircle, Brain, Key, Save, Trash2 } from 'lucide-react'
 
 export default function ConfiguracoesPage() {
-  const { config, save, clear } = useAiConfig()
+  const { config, save, clear, loading } = useAiConfig()
 
-  const [provider, setProvider] = useState<ProviderId>(config?.provider || 'groq')
-  const [apiKey, setApiKey] = useState(config?.apiKey || '')
-  const [chatModel, setChatModel] = useState(config?.chatModel || '')
+  const [provider, setProvider] = useState<ProviderId>('groq')
+  const [apiKey, setApiKey] = useState('')
+  const [chatModel, setChatModel] = useState('')
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<'success' | 'fail' | null>(null)
 
@@ -29,7 +29,16 @@ export default function ConfiguracoesPage() {
   const currentProvider = PROVIDERS.find((p) => p.id === provider)
   const canTranscribe = currentProvider?.supportsTranscription ?? false
 
-  function handleSave() {
+  useEffect(() => {
+    if (config) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProvider(config.provider)
+      setApiKey(config.apiKey)
+      setChatModel(config.chatModel)
+    }
+  }, [config])
+
+  async function handleSave() {
     if (!apiKey.trim()) {
       toast.error('Informe a chave de API')
       return
@@ -38,7 +47,7 @@ export default function ConfiguracoesPage() {
       toast.error('Selecione um modelo')
       return
     }
-    save({
+    await save({
       provider,
       apiKey: apiKey.trim(),
       chatModel,
@@ -75,11 +84,10 @@ export default function ConfiguracoesPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <Toaster richColors position="top-center" />
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-          <Brain className="h-7 w-7 text-indigo-500" />
+          <Brain className="h-7 w-7 text-primary" />
           Configurações de IA
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -99,7 +107,7 @@ export default function ConfiguracoesPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label className="text-foreground">Provedor</Label>
-              <Select value={provider} onValueChange={(v) => {
+              <Select value={provider} disabled={loading} onValueChange={(v) => {
                 setProvider(v as ProviderId)
                 const models = getChatModels(v as ProviderId)
                 if (models.length > 0) setChatModel(models[0].id)
@@ -166,8 +174,8 @@ export default function ConfiguracoesPage() {
             )}
 
             <div className="flex items-center gap-3 pt-2">
-              <Button onClick={handleSave} className="bg-primary hover:bg-primary/90 text-white gap-2">
-                <Save className="h-4 w-4" /> Salvar
+              <Button onClick={handleSave} disabled={loading} className="bg-primary hover:bg-primary/90 text-white gap-2">
+                <Save className="h-4 w-4" /> {loading ? 'Carregando...' : 'Salvar'}
               </Button>
               <Button
                 variant="outline"

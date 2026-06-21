@@ -12,10 +12,10 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose,
 } from '@/components/ui/dialog'
-import { Toaster } from 'sonner'
 import { Plus, Pencil, Trash2, Loader2, Wrench, CalendarDays, AlertCircle } from 'lucide-react'
 import { equipmentSchema } from '@/lib/validations'
 import { format, parseISO } from 'date-fns'
+import { EmptyState } from '@/components/EmptyState'
 
 export default function EquipmentsPage() {
   const { data: equipments, isLoading } = useEquipments()
@@ -81,21 +81,26 @@ export default function EquipmentsPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <Toaster richColors position="top-center" />
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Equipamentos</h1>
           <p className="text-sm text-muted-foreground">Gerencie seus aparelhos de fisioterapia</p>
         </div>
-        <Button onClick={openCreate} className="bg-primary hover:bg-primary/90 text-white gap-2">
+        <Button onClick={openCreate} className="gap-2">
           <Plus className="h-4 w-4" /> Novo Equipamento
         </Button>
       </div>
 
       <Card className="bg-card border-border">
         <CardContent className="p-0">
-          <Table>
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : equipments?.length ? (
+          <div className="overflow-x-auto">
+          <Table className="min-w-[720px]">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground">Nome</TableHead>
@@ -105,56 +110,56 @@ export default function EquipmentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+              {equipments.map((eq) => (
+                <TableRow key={eq.id} className="border-border hover:bg-muted/50">
+                  <TableCell className="font-medium text-card-foreground">
+                    <div className="flex items-center gap-2">
+                      <Wrench className="h-4 w-4 text-primary" />
+                      {eq.nome}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground hidden md:table-cell">{eq.modelo || '-'}</TableCell>
+                  <TableCell className="text-muted-foreground hidden md:table-cell">
+                    {eq.ultima_manutencao ? (
+                      <div className="flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {format(parseISO(eq.ultima_manutencao), 'dd/MM/yyyy')}
+                      </div>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon-xs"
+                        onClick={() => openEdit(eq)}
+                        className="text-muted-foreground hover:text-primary">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon-xs"
+                        onClick={() => handleDelete(eq.id, eq.nome)}
+                        className="text-muted-foreground hover:text-red-400">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : !equipments?.length ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    <Wrench className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    Nenhum equipamento cadastrado
-                  </TableCell>
-                </TableRow>
-              ) : (
-                equipments.map((eq) => (
-                  <TableRow key={eq.id} className="border-border hover:bg-muted/50">
-                    <TableCell className="font-medium text-card-foreground">
-                      <div className="flex items-center gap-2">
-                        <Wrench className="h-4 w-4 text-indigo-400" />
-                        {eq.nome}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden md:table-cell">{eq.modelo || '-'}</TableCell>
-                    <TableCell className="text-muted-foreground hidden md:table-cell">
-                      {eq.ultima_manutencao ? (
-                        <div className="flex items-center gap-1">
-                          <CalendarDays className="h-3 w-3" />
-                          {format(parseISO(eq.ultima_manutencao), 'dd/MM/yyyy')}
-                        </div>
-                      ) : '-'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon-xs"
-                          onClick={() => openEdit(eq)}
-                          className="text-muted-foreground hover:text-indigo-400">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon-xs"
-                          onClick={() => handleDelete(eq.id, eq.nome)}
-                          className="text-muted-foreground hover:text-red-400">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           </Table>
+          </div>
+          ) : (
+            <div className="py-12">
+              <EmptyState
+                icon={Wrench}
+                title="Nenhum equipamento cadastrado"
+                description="Cadastre aparelhos de fisioterapia para associar aos protocolos e acompanhar a manutenção."
+                action={
+                  <Button onClick={openCreate} className="gap-2">
+                    <Plus className="h-4 w-4" /> Novo Equipamento
+                  </Button>
+                }
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

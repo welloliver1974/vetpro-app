@@ -18,7 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Toaster } from 'sonner'
+import { EmptyState } from '@/components/EmptyState'
 import { Plus, Pencil, Trash2, Loader2, FileText, AlertCircle } from 'lucide-react'
 import { protocolSchema } from '@/lib/validations'
 
@@ -105,21 +105,26 @@ export default function ProtocolsPage() {
 
   return (
     <div className="p-4 md:p-8">
-      <Toaster richColors position="top-center" />
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Protocolos</h1>
           <p className="text-sm text-muted-foreground">Templates de tratamento fisioterápico</p>
         </div>
-        <Button onClick={openCreate} className="bg-primary hover:bg-primary/90 text-white gap-2">
+        <Button onClick={openCreate} className="gap-2">
           <Plus className="h-4 w-4" /> Novo Protocolo
         </Button>
       </div>
 
       <Card className="bg-card border-border">
         <CardContent className="p-0">
-          <Table>
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : protocols?.length ? (
+          <div className="overflow-x-auto">
+          <Table className="min-w-[720px]">
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead className="text-muted-foreground">Nome</TableHead>
@@ -129,58 +134,58 @@ export default function ProtocolsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+              {protocols.map((protocol) => (
+                <TableRow key={protocol.id} className="border-border hover:bg-muted/50">
+                  <TableCell className="font-medium text-card-foreground">{protocol.nome}</TableCell>
+                  <TableCell className="text-muted-foreground hidden md:table-cell">
+                    {protocol.equipments?.nome || <span className="text-muted-foreground">-</span>}
                   </TableCell>
-                </TableRow>
-              ) : !protocols?.length ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    Nenhum protocolo cadastrado
-                  </TableCell>
-                </TableRow>
-              ) : (
-                protocols.map((protocol) => (
-                  <TableRow key={protocol.id} className="border-border hover:bg-muted/50">
-                    <TableCell className="font-medium text-card-foreground">{protocol.nome}</TableCell>
-                    <TableCell className="text-muted-foreground hidden md:table-cell">
-                      {protocol.equipments?.nome || <span className="text-muted-foreground">-</span>}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {protocol.configuracoes_padrao ? (
-                        <div className="flex flex-wrap gap-1">
-                          {Object.entries(protocol.configuracoes_padrao).map(([key, val]) => (
-                            <Badge key={key} variant="outline" className="border-border text-muted-foreground text-[10px]">
-                              {key}: {val}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon-xs"
-                          onClick={() => openEdit(protocol)}
-                          className="text-muted-foreground hover:text-indigo-400">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon-xs"
-                          onClick={() => handleDelete(protocol.id, protocol.nome)}
-                          className="text-muted-foreground hover:text-red-400">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                  <TableCell className="hidden md:table-cell">
+                    {protocol.configuracoes_padrao ? (
+                      <div className="flex flex-wrap gap-1">
+                        {Object.entries(protocol.configuracoes_padrao).map(([key, val]) => (
+                          <Badge key={key} variant="outline" className="border-border text-muted-foreground text-[10px]">
+                            {key}: {val}
+                          </Badge>
+                        ))}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon-xs"
+                        onClick={() => openEdit(protocol)}
+                        className="text-muted-foreground hover:text-primary">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon-xs"
+                        onClick={() => handleDelete(protocol.id, protocol.nome)}
+                        className="text-muted-foreground hover:text-red-400">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
+          </div>
+          ) : (
+            <div className="py-12">
+              <EmptyState
+                icon={FileText}
+                title="Nenhum protocolo cadastrado"
+                description="Crie templates com equipamentos e configurações padrão para acelerar o registro das sessões."
+                action={
+                  <Button onClick={openCreate} className="gap-2">
+                    <Plus className="h-4 w-4" /> Novo Protocolo
+                  </Button>
+                }
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -14,6 +14,19 @@ export type Patient = {
   tutor_nome: string | null
   tutor_contato: string | null
   endereco: string | null
+  data_nascimento: string | null
+  sexo: string | null
+  peso: number | null
+  cor_pelagem: string | null
+  microchip: string | null
+  queixa_principal: string | null
+  historico_doenca_atual: string | null
+  doencas_preexistentes: string | null
+  medicamentos_continuos: string | null
+  historico_cirurgico: string | null
+  alergias: string | null
+  vacinacao: string | null
+  observacoes: string | null
   created_at: string
 }
 
@@ -24,12 +37,27 @@ export type PatientInput = {
   tutor_nome?: string
   tutor_contato?: string
   endereco?: string
+  data_nascimento?: string
+  sexo?: string
+  peso?: number | null
+  cor_pelagem?: string
+  microchip?: string
+  queixa_principal?: string
+  historico_doenca_atual?: string
+  doencas_preexistentes?: string
+  medicamentos_continuos?: string
+  historico_cirurgico?: string
+  alergias?: string
+  vacinacao?: string
+  observacoes?: string
 }
+
+const patientSelect = 'id, nome, especie, raca, tutor_nome, tutor_contato, endereco, data_nascimento, sexo, peso, cor_pelagem, microchip, queixa_principal, historico_doenca_atual, doencas_preexistentes, medicamentos_continuos, historico_cirurgico, alergias, vacinacao, observacoes, created_at'
 
 async function fetchPatients(): Promise<Patient[]> {
   const { data, error } = await supabase
     .from('patients')
-    .select('*')
+    .select(patientSelect)
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -43,7 +71,7 @@ async function createPatient(input: PatientInput) {
   const { data, error } = await supabase
     .from('patients')
     .insert([{ ...input, vet_id: user.id }])
-    .select()
+    .select(patientSelect)
     .single()
 
   if (error) throw error
@@ -55,7 +83,7 @@ async function updatePatient(id: string, input: Partial<PatientInput>) {
     .from('patients')
     .update(input)
     .eq('id', id)
-    .select()
+    .select(patientSelect)
     .single()
 
   if (error) throw error

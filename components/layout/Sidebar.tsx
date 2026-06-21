@@ -14,6 +14,8 @@ import {
   X,
   Settings,
   Building2,
+  Container,
+  ClipboardPlus,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -23,6 +25,8 @@ const navItems = [
   { href: '/pacientes', label: 'Pacientes', icon: Users },
   { href: '/agenda', label: 'Agenda', icon: Calendar },
   { href: '/equipamentos', label: 'Equipamentos', icon: Package },
+  { href: '/estoque', label: 'Estoque', icon: Container },
+  { href: '/receituario', label: 'Receituário', icon: ClipboardPlus },
   { href: '/protocolos', label: 'Protocolos', icon: FileText },
   { href: '/financeiro', label: 'Financeiro', icon: DollarSign },
 ]

@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 
+const patientSelect = 'id, nome, especie, raca, tutor_nome, tutor_contato, endereco, data_nascimento, sexo, peso, cor_pelagem, microchip, queixa_principal, historico_doenca_atual, doencas_preexistentes, medicamentos_continuos, historico_cirurgico, alergias, vacinacao, observacoes, created_at'
+
 export async function getPatients() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('patients')
-    .select('*')
+    .select(patientSelect)
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -15,7 +17,7 @@ export async function getPatient(id: string) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('patients')
-    .select('*')
+    .select(patientSelect)
     .eq('id', id)
     .single()
 
@@ -27,7 +29,7 @@ export async function getAppointments() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('appointments')
-    .select('*, pacientes:nome, pacientes:especie')
+    .select('id, paciente_id, data, tipo, status, valor, forma_pagamento, assinatura_url, created_at, patients(nome, especie, endereco)')
     .order('data', { ascending: true })
 
   if (error) throw error
@@ -43,7 +45,7 @@ export async function getTodayAppointments() {
 
   const { data, error } = await supabase
     .from('appointments')
-    .select('*, patients(nome, especie)')
+    .select('id, paciente_id, data, tipo, status, valor, forma_pagamento, assinatura_url, created_at, patients(nome, especie, endereco)')
     .gte('data', today.toISOString())
     .lt('data', tomorrow.toISOString())
     .order('data', { ascending: true })

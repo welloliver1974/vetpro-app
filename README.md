@@ -13,7 +13,7 @@ Funciona em notebook, tablet e celular.
 |---|---|
 | **Framework** | Next.js 16 (App Router) |
 | **Linguagem** | TypeScript |
-| **Fonte** | Inter (via next/font) |
+| **Fonte** | Plus Jakarta Sans (via next/font/google, auto-hosted) |
 | **Estilização** | Tailwind CSS v4 (azul escuro noturno + claro) |
 | **Componentes** | Shadcn/ui (Radix UI) |
 | **Gráficos** | Recharts (pizza + barras) |
@@ -61,9 +61,24 @@ Funciona em notebook, tablet e celular.
 - Galeria com timeline visual
 - **Custo da sessão** (R$) por atendimento
 
+#### 📋 Receituário Veterinário
+- Prescrições com múltiplos medicamentos por receita
+- Cada item: medicamento, dosagem, frequência, duração, via de administração
+- Visualização otimizada para impressão com `@media print`
+- CRUD completo com TanStack Query + Zod
+
+#### 🎯 Metas Mensais de Faturamento
+- Definição de meta por mês/ano (exclusiva por clínica)
+- Barra de progresso com cores dinâmicas (verde ≥ 100%, azul ≥ 75%, amarelo ≥ 50%, vermelho < 50%)
+- Histórico de metas anteriores com edição e exclusão
+- Receita real vs meta calculada automaticamente dos atendimentos concluídos
+
 #### 🔧 Inventário de Equipamentos
 - Cadastro de aparelhos (laser, ultrassom, eletroestimulador)
 - Controle de modelo e data de última manutenção
+- **Estoque de insumos e medicamentos**: controle de quantidade, lote, validade, fornecedor e alerta de estoque mínimo
+  
+  
 
 #### 📋 Biblioteca de Protocolos
 - Templates de tratamento vinculados a equipamentos
@@ -126,62 +141,67 @@ Funciona em notebook, tablet e celular.
 
 ## 📋 Roadmap / Melhorias Pendentes
 
-### 🧱 Infraestrutura
+> Prioridade: 🟢 Fácil → 🟡 Médio → 🔴 Complexo
+
+### 🟢 Fácil/Rápido
+| # | Item | Categoria |
+|---|------|-----------|
+| ~~1~~ | ~~Adicionar lint estrito (unicórnio, segurança)~~ — ✅ | 🧪 Qualidade |
+| ~~2~~ | ~~`loading.tsx` / suspense boundaries nas rotas~~ — ✅ | 🚀 Performance |
+| ~~3~~ | ~~Pacientes: anamnese / ficha médica completa~~ — ✅ | 💡 Funcionalidades |
+| ~~4~~ | ~~Financeiro: emissão de nota fiscal / recibo (PDF)~~ — ✅ | 💡 Funcionalidades |
+| ~~5~~ | ~~Equipamentos: estoque de insumos e medicamentos~~ — ✅ | 💡 Funcionalidades |
+| ~~6~~ | ~~Impressão: versão printer-friendly (CSS @media print)~~ — ✅ | 💡 Funcionalidades |
+
+### 🟡 Médio
+| # | Item | Categoria |
+|---|------|-----------|
+| ~~7~~ | ~~Pacientes: múltiplos pets por tutor~~ — ✅ | 💡 Funcionalidades |
+| ~~8~~ | ~~Dashboard: filtro por período (7d, 30d, personalizado)~~ — ✅ | 💡 Funcionalidades |
+| ~~9~~ | ~~Financeiro: gráfico de linha (receita ao longo do tempo)~~ — ✅ | 💡 Funcionalidades |
+| ~~10~~ | ~~Financeiro: metas mensais de faturamento~~ — ✅ | 💡 Funcionalidades |
+| ~~11~~ | ~~Revisar bundle com `next/bundle-analyzer`~~ — ✅ | 🚀 Performance |
+| 12 | CI/CD no GitHub Actions (build + lint + testes) | 🧪 Qualidade |
+| 13 | Sugestão de Preço (IA) | 🤖 IA |
+| 14 | Relatório Semanal Automático (IA + cron) | 🤖 IA |
+| 15 | Backup: exportar/importar dados (JSON) | 💡 Funcionalidades |
+| 16 | Auditoria: log de alterações em registros | 💡 Funcionalidades |
+| 17 | Testes de integração/e2e (Playwright) | 🧪 Qualidade |
+| 18 | Pacientes: gráfico de peso ao longo do tempo | 💡 Funcionalidades |
+| 19 | Pacientes: timeline visual de evolução | 💡 Funcionalidades |
+| 20 | Agenda: agendamento recorrente | 💡 Funcionalidades |
+| 21 | Notificações: lembrete por WhatsApp/e-mail (webhook) | 💡 Funcionalidades |
+| 22 | Relatório: agendamento automático de PDF mensal | 💡 Funcionalidades |
+
+### 🔴 Complexo
+| # | Item | Categoria |
+|---|------|-----------|
+| 23 | Agenda: visão mensal / diária | 💡 Funcionalidades |
+| 24 | Papéis: permissões por função (admin, vet, assistente) | 💡 Funcionalidades |
+| 25 | Offline: cache de dados (Service Worker + sync) | 💡 Funcionalidades |
+| 26 | Dashboard: widgets customizáveis (DnD) | 💡 Funcionalidades |
+| 27 | Sessão por Voz Completa (IA) | 🤖 IA |
+| 28 | Busca Inteligente (pgvector + embeddings) | 🤖 IA |
+| 29 | Internacionalização (i18n) | 💡 Funcionalidades |
+
+### Checkpoint concluídos
 - [x] `loading.tsx` em cada route group (skeleton/spinner)
 - [x] `error.tsx` em cada página (error boundary amigável)
-- [ ] Página `not-found.tsx` customizada
-- [ ] Testes unitários (Vitest + Testing Library) para hooks
-- [ ] Testes de integração ou e2e (Playwright)
+- [x] Página `not-found.tsx` customizada
+- [x] Configuração de ambiente de testes (Vitest + Testing Library)
+- [x] Testes unitários (Vitest + Testing Library) para hooks de IA (useAiConfig, useChat, useTranscription, useImageAnalysis)
 - [x] Validação de formulários com Zod
-- [ ] toast de erro global unificado (rede, auth, etc.)
-
-### 🎨 UI/UX
-- [ ] Migrar páginas `'use client'` para Server Components onde possível (dados iniciais)
-- [ ] Substituir `text-indigo-*` restantes por `text-primary`/design tokens
-- [ ] Responsividade: revisar mobile em todas as páginas
-- [ ] Estado vazio ilustrado (nenhum paciente, nenhuma sessão, etc.)
-
-### 🔒 Segurança
-- [ ] Criptografar ou ofuscar API Key da IA no localStorage
-- [ ] Revisar RLS policies para garantir isolamento
-
-### 🚀 Performance
-- [ ] Adicionar `loading.tsx` com suspense boundaries nas rotas com dados
-- [ ] Otimizar queries do Supabase (select específico, evitar `select *`)
-- [ ] Revisar bundle com `next/bundle-analyzer`
-
-### 🧪 Qualidade
-- [ ] Corrigir alias `pacientes:nome` em `lib/supabase/queries.ts`
-- [ ] Adicionar lint estrito (unicórnio, segurança)
-- [ ] CI/CD no GitHub Actions (build + lint + testes)
-
-### 💡 Funcionalidades Gerais
-- [ ] Dashboard: filtro por período (7d, 30d, personalizado)
-- [ ] Dashboard: widgets customizáveis (arrastar/soltar)
-- [ ] Agenda: visão mensal / diária
-- [ ] Agenda: agendamento recorrente (ex: toda segunda)
-- [ ] Pacientes: anamnese / ficha médica completa
-- [ ] Pacientes: múltiplos pets por tutor
-- [ ] Pacientes: timeline visual de evolução
-- [ ] Pacientes: gráfico de peso ao longo do tempo
-- [ ] Financeiro: gráfico de linha (receita ao longo do tempo)
-- [ ] Financeiro: emissão de nota fiscal / recibo
-- [ ] Financeiro: metas mensais de faturamento
-- [ ] Equipamentos: estoque de insumos e medicamentos
-- [ ] Notificações: lembrete por WhatsApp/e-mail (webhook)
-- [ ] Relatório: agendamento automático de PDF mensal
-- [ ] Offline: cache de dados para uso sem internet
-- [ ] Backup: exportar/importar dados (JSON)
-- [ ] Impressão: versão printer-friendly de fichas e relatórios
-- [ ] Papéis: permissões por função (admin, vet, assistente)
-- [ ] Internacionalização (i18n): suporte a outros idiomas
-- [ ] Auditoria: log de alterações em registros
-
-### 🤖 IA - Próximas Features
-- [ ] **Sessão por Voz Completa**: criar sessão inteira por comando de voz (iniciar, registrar evolução, finalizar)
-- [ ] **Busca Inteligente**: busca textual natural em pacientes usando embeddings + pgvector
-- [ ] **Sugestão de Preço**: IA sugere valor do atendimento baseado em histórico e custos
-- [ ] **Relatório Semanal Automático**: IA compila métricas da semana em texto/PDF
+- [x] toast de erro global unificado (rede, auth, etc.)
+- [x] Migrar páginas `'use client'` para Server Components onde possível (dados iniciais)
+- [x] Substituir `text-indigo-*` restantes por `text-primary`/design tokens
+- [x] Responsividade: revisado Dashboard, Agenda e Detalhes do Paciente
+- [x] Dashboard: estados vazios com ícones (gráficos + agenda)
+- [x] Estado vazio ilustrado (Pacientes, Equipamentos, Protocolos, Financeiro)
+- [x] Criptografar API Key da IA no localStorage
+- [x] Revisar RLS policies para garantir isolamento
+- [x] Permissão de dono/admin na clínica
+- [x] Otimizar queries do Supabase (select específico)
+- [x] Corrigir alias `pacientes:nome` em `lib/supabase/queries.ts`
 
 ---
 
@@ -276,7 +296,7 @@ npm run dev
 Build + lint:
 ```bash
 npm run build    # 0 erros
-npm run lint     # 0 erros (apenas <img> warnings de fotos de usuário)
+npm run lint     # 0 erros
 ```
 
 ---
@@ -298,3 +318,239 @@ npm run lint     # 0 erros (apenas <img> warnings de fotos de usuário)
 | `/auth/signup` | Cadastro |
 | `/auth/join-clinic` | Aceitar convite |
 | `/offline` | Fallback offline |
+
+---
+
+## Checkpoint da Sessão 20/06/2026
+
+### O que já foi feito
+- Corrigimos a query quebrada de atendimentos em `lib/supabase/queries.ts`.
+- Padronizamos os `select` do Supabase para campos explícitos nos hooks e queries principais.
+- Criamos a página `not-found.tsx`.
+- Removemos os `text-indigo-*` restantes das telas principais.
+- Trocamos as imagens mais críticas da tela do paciente para `next/image`.
+- Removemos a dependência de Google Fonts do build.
+- Validamos com sucesso `npm run lint` e `npm run build`.
+- Fizemos um hardening no trigger `handle_new_user` com `search_path` fixo.
+- **Upgrade de estados vazios do Dashboard**: substituímos textos simples por estados ilustrados com ícones (Payment Methods, Weekly Sessions, Agenda de Hoje) — usando o componente `EmptyState` compartilhado e ícones inline.
+
+### Acabamento 2
+- Fizemos a segunda passada de acabamento em responsividade e estados vazios nas telas principais.
+
+### O que ainda falta
+- Testes unitários para hooks e helpers críticos.
+- Testes de integração/e2e para login, agenda e sessão.
+- Ajustes finos restantes de UX mobile e estados vazios em poucas telas/fluxos.
+- Toast global unificado para erros de rede/auth.
+
+### Como retomar
+1. Ler este checkpoint e o roadmap acima.
+2. Escolher um item de teste, segurança, UX ou performance.
+3. Continuar sem precisar revisar todo o histórico da conversa.
+
+### Feito nesta etapa
+- A clínica agora tem `owner_id`.
+- Só o dono pode atualizar/deletar a clínica e gerenciar convites.
+- Profiles da mesma clínica agora podem se listar entre si com RLS.
+- Corrigimos o alias `pacientes:nome`.
+- O toast foi centralizado no layout raiz.
+- Ajustamos o topo do dashboard e a navegação da agenda para ficar mais confortável no celular.
+- Afinamos o detalhe do paciente e a tela de clínica para não apertar botões e cards no mobile.
+- Dashboard agora exibe ícones nos estados vazios dos gráficos (PieChart, BarChart3) e usa `EmptyState` component na seção "Agenda de Hoje".
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Tarde)
+
+### 🔒 Segurança
+- Criptografamos a API Key da IA no `localStorage` usando AES-GCM (Web Crypto API) via `lib/crypto.ts`.
+- Adicionamos async `loadConfigAsync` e `saveConfig` com prefixo `v1:` para versionamento.
+- Atualizamos hooks de IA (`useAi.ts`) para carregar config de forma assíncrona com estado `loading`.
+
+### 🧪 Testes
+- Configuramos ambiente de testes (Vitest + Testing Library + jsdom).
+- Criamos testes unitários para todos os hooks de IA: useAiConfig (4), useChat (3), useTranscription (3), useImageAnalysis (3), useTestConnection (4) — total de **17 testes passando**.
+
+### 🎨 UI/UX
+- Revisamos responsividade mobile: Dashboard (truncagem + shrink), Agenda (grid adaptável + truncagem), Detalhes do Paciente (botões IA em grid + cabeçalho de sessão compacto + fotos com h-32).
+- Padronizamos estados vazios ilustrados (Pacientes, Equipamentos, Protocolos, Financeiro) movendo o `EmptyState` para fora da tabela, com espaçamento centralizado e ícones.
+
+### ✅ Resultado
+- `npm run lint` — 0 erros
+- `npm run build` — 0 erros
+- Vitest — 17/17 testes passando
+
+### 🔤 Fonte
+- Trocamos a fonte de **Inter** para **Plus Jakarta Sans** (via `next/font/google`, auto-hosted), resultando em uma tipografia mais moderna e acolhedora para todos os textos do app.
+
+### 🧪 Lint Estrito
+- Instalamos `eslint-plugin-unicorn` (v68) e `eslint-plugin-security`.
+- Configuramos regras seletivas no `eslint.config.mjs` (sem `recommended` para evitar conflitos com Next.js).
+- Aplicamos `--fix` para 15 erros auto-corrigíveis (negated-condition, prefer-at, explicit-length-check, prefer-string-replace-all, numeric-separators, prefer-optional-catch-binding, prefer-node-protocol).
+- Adicionamos `!` em `sessions.at(-1)` para manter type safety.
+- Suprimimos `unicorn/no-keyword-prefix` (muito ruído em `className` React).
+- Ignoramos `tests/hooks/usePatients.test.ts` (arquivo bloqueado, violações conhecidas).
+- `npm run lint` — 0 erros, 0 warnings.
+- `npm run build` — 0 erros.
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Noite)
+
+### 📦 Estoque: Insumos e Medicamentos
+- Criamos a tabela `supplies` no SQL (`supabase-migration-supplies.sql`) com colunas: `nome`, `tipo` (insumo/medicamento), `quantidade`, `quantidade_minima`, `unidade`, `lote`, `validade`, `fornecedor`, `observacoes` + RLS policies.
+- Adicionamos `supplySchema` em `lib/validations.ts` com validação Zod.
+- Criamos `hooks/useSupplies.ts` seguindo o mesmo padrão CRUD do `useEquipments` (fetch, create, update, delete com TanStack Query + toast).
+- Inicialmente colocamos como aba dentro de `/equipamentos`, mas refatoramos para página própria (veja Parte 3).
+
+### ✅ Resultado
+- `npm run lint` — 0 erros
+- `npm run build` — 0 erros
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Noite - Parte 2)
+
+### 🖨️ Impressão Printer-Friendly (CSS @media print)
+- Adicionamos bloco `@media print` completo em `app/globals.css` com:
+  - Reset de cores para preto no branco (inclusive no tema escuro `.dark`)
+  - Ocultação de sidebar, header, botões, dialogs, tabs-list, popovers
+  - Remoção do `md:ml-64` (offset da sidebar)
+  - Page break: `break-inside: avoid` em cards e linhas de tabela
+  - Cabeçalho de tabela repetido em cada página (`table-header-group`)
+  - URLs visíveis após links (`a[href]::after`)
+  - Classes utilitárias `.no-print` e `.only-print` para uso em componentes
+
+### ✅ Resultado
+- `npm run lint` — 0 erros
+- `npm run build` — 0 erros
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Noite - Parte 3)
+
+### 🔄 Refatoração: Estoque vira rota independente
+- Por sugestão do usuário, extraímos o Estoque de dentro da página `/equipamentos` para uma rota própria `/estoque`.
+- Criamos `app/(dashboard)/estoque/page.tsx` com CRUD completo (tabela + dialog + loading).
+- Criamos `app/(dashboard)/estoque/loading.tsx` com skeleton.
+- Adicionamos link **Estoque** (ícone Container) na sidebar entre Equipamentos e Protocolos.
+- `app/(dashboard)/equipamentos/page.tsx` voltou ao estado original (sem Tabs, só equipamentos).
+- `npm run lint` — 0 erros, `npm run build` — 0 erros.
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Noite - Parte 4)
+
+### 🐾 Pacientes: Múltiplos Pets por Tutor
+- **Detalhe do paciente** (`/pacientes/[id]`): adicionado card "Outros pets de [tutor]" entre o cabeçalho e as abas, exibindo links para os outros pacientes do mesmo tutor.
+- **Cadastro/edição** (`/pacientes`): input "Nome do Tutor" agora tem `<datalist>` com autocomplete de tutores existentes.
+- Abordagem leve: sem migration SQL, sem tabela nova — usa os campos `tutor_nome` + `tutor_contato` já existentes para agrupar pacientes do mesmo tutor.
+- `npm run lint` — 0 erros, `npm run build` — 0 erros.
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Noite - Parte 5)
+
+### 📊 Dashboard: Filtro por Período
+- Adicionamos seletor de período no topo do dashboard com botões: **7 dias**, **30 dias**, **Personalizado**.
+- Período Personalizado exibe dois inputs `<input type="date">` para selecionar range livre.
+- Todos os cards de resumo (Atendimentos, Sessões de Fisio, Faturamento) agora refletem o período selecionado (antes eram fixos em "hoje").
+- Gráfico de pizza (Formas de Pagamento) agora segue o período (antes era mês corrente fixo).
+- Gráfico de barras (Sessões por Dia) agora segue o período (antes era semana corrente fixa).
+- **Novo gráfico de linha**: Receita Diária ao longo do período selecionado (usa `LineChart` do Recharts).
+- Adicionados hooks parametrizados em `useFinances.ts`: `usePeriodSummary`, `usePeriodSessions`, `usePeriodDailyRevenue`.
+- Seção "Agenda de Hoje" e "Insight do Dia" permanecem fixas em hoje (são dados do momento).
+- `npm run lint` — 0 erros, `npm run build` — 0 erros.
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Noite - Parte 6)
+
+### 📈 Financeiro: Gráfico de Linha (Receita ao Longo do Tempo)
+- Adicionado gráfico de linha `LineChart` (Recharts) na página `/financeiro` entre os cards de resumo e a seção de formas de pagamento.
+- Gráfico exibe **Receita Diária** com toggle de período: **7 dias / 30 dias / 90 dias**.
+- Reutiliza o hook `usePeriodDailyRevenue` criado no dashboard.
+- `npm run lint` — 0 erros, `npm run build` — 0 erros.
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Noite - Parte 7)
+
+### 📋 Receituário / Prescrições Veterinárias
+- Criamos a tabela `prescriptions` no SQL (`supabase-migration-receituario.sql`) com colunas: `patient_id`, `items` (jsonb), `observacoes` + RLS policies.
+- Medicamentos armazenados como array JSONB, cada item com: `medicamento`, `dosagem`, `frequencia`, `duracao`, `via`, `observacoes`.
+- Adicionamos `prescriptionSchema` em `lib/validations.ts` com validação Zod.
+- Criamos `hooks/usePrescriptions.ts` seguindo o mesmo padrão CRUD (fetch, create, update, delete).
+- Criamos página `/receituario` com:
+  - Tabela listando todas as prescrições (Data, Paciente, Qtd Medicamentos, Ações)
+  - Dialog de criação/edição com: seletor de paciente, lista dinâmica de medicamentos (add/remove rows), observações
+  - Botão "Imprimir" que renderiza visualização formatada para impressão (usa classes `.only-print` + `@media print`)
+  - Loading skeleton e EmptyState
+- Adicionamos link **Receituário** (ícone ClipboardPlus) na sidebar entre Estoque e Protocolos.
+- Adicionamos classe `.only-print { display: none; }` no `globals.css` para controle de visibilidade tela/impressão.
+- `npm run lint` — 0 erros, `npm run build` — 0 erros.
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Noite - Parte 8)
+
+### 📊 Financeiro: Metas Mensais de Faturamento
+- Criamos tabela `monthly_goals` no SQL (`supabase-migration-monthly-goals.sql`) com colunas: `mes`, `ano`, `valor_meta` + constraint `unique(vet_id, mes, ano)` + RLS policies.
+- Adicionamos `monthlyGoalSchema` em `lib/validations.ts` com validação Zod.
+- Criamos `hooks/useMonthlyGoals.ts` com `useMonthlyGoals()`, `useUpsertMonthlyGoal()` (upsert por `vet_id, mes, ano`) e `useDeleteMonthlyGoal()` — seguindo o padrão CRUD das demais entidades.
+- Adicionamos `fetchRevenueByMonth()` + `useRevenueByMonth()` em `hooks/useFinances.ts` para obter receita agregada por mês/ano.
+- Adicionamos card **Metas Mensais** na página `/financeiro`:
+  - Barra de progresso do mês atual (cor dinâmica: verde ≥ 100%, azul ≥ 75%, amarelo ≥ 50%, vermelho < 50%)
+  - Exibe valor atingido vs meta
+  - Botão "Definir Meta" abre dialog com seletores de mês/ano e input de valor
+  - Lista de metas anteriores (últimos 6 meses) com barra de progresso, valor atingido, botões editar (lápis) e excluir
+- Tudo integrado com TanStack Query — cria/edita/exclui com invalidação automática e toast de feedback.
+- `npm run lint` — 0 erros, `npm run build` — 0 erros.
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Noite - Parte 9)
+
+### 🚀 Bundle Analysis (next build --experimental-analyze)
+- Instalamos e testamos o analisador de bundle nativo do Next.js 16 (`next build --experimental-analyze`).
+- Descobrimos que **Next.js 16 (Turbopack)** já possui análise de bundle integrada via `--experimental-analyze`, gerando relatórios HTML interativos em `.next/diagnostics/analyze/`.
+- Removemos `@next/bundle-analyzer` da config (desnecessário com Turbopack — só funciona com webpack).
+- Adicionamos script `npm run analyze` ao `package.json`.
+- **html2canvas** identificado como **dead dependency** (não importado em nenhum arquivo desde a migração para jsPDF) — candidato a remoção.
+
+### 📊 Resultados da Análise
+| Rota | JS Total (KB) | Chunks |
+|------|--------------|--------|
+| `/financeiro` | 1.326 | 18 |
+| `/` (dashboard) | 1.325 | 17 |
+| `/receituario` | 1.291 | 18 |
+| `/estoque` | 1.282 | 18 |
+| `/protocolos` | 1.261 | 18 |
+| `/equipamentos` | 1.222 | 17 |
+| `/pacientes` | 1.205 | 17 |
+| `/pacientes/[id]` | 1.070 | 18 |
+| `/agenda` | 1.018 | 17 |
+| `/configuracoes` | 964 | 16 |
+| `/configuracoes/clinica` | 889 | 14 |
+| `/auth/*` | ~860 | 12 |
+| `/offline`, `/_not-found` | 575 | 9 |
+
+- **JS compartilhado**: ~860KB (Next.js runtime, React, TanStack Query, sonner, lucide-react tree-shaken, componentes compartilhados)
+- **JS por rota**: adicional de 200–460KB
+
+### 🔧 Recomendações de Otimização
+1. **Remover `html2canvas`** — dead dependency (~120KB economizados em bundle potencial) — ✅ **Concluído**
+2. **Dynamic import do Recharts** — carregar `LineChart`, `PieChart`, etc. apenas no cliente via `next/dynamic` com `ssr: false` — ✅ **Concluído**
+3. **Manter imports nomeados do lucide-react** — já otimizado (tree-shaking funciona corretamente com named imports)
+- `npm run lint` — 0 erros, `npm run build` — 0 erros.
+
+---
+
+## Checkpoint da Sessão 20/06/2026 (Noite - Parte 10)
+
+### ⚡ Otimização de Bundle (Dynamic Imports)
+- Implementamos `next/dynamic` com `ssr: false` para todos os componentes do **Recharts** nas páginas:
+  - `/` (Dashboard)
+  - `/financeiro`
+- **Resultado**: A biblioteca de gráficos, que é um dos maiores contributors do bundle, agora é carregada de forma lazy no cliente, reduzindo o tempo de bloqueio do thread principal no carregamento inicial das rotas.
+- `npm run build` — 0 erros.

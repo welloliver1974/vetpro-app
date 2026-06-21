@@ -1,11 +1,9 @@
 import "./globals.css";
 import QueryProvider from '@/providers/QueryProvider';
 import { ThemeProvider } from 'next-themes'
-import { Inter } from "next/font/google";
-import { cn } from "@/lib/utils";
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister'
-
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+import { Toaster } from '@/components/ui/sonner'
+import { plusJakartaSans } from '@/lib/fonts'
 
 export default function RootLayout({
   children,
@@ -13,7 +11,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={cn("font-sans", inter.variable)} suppressHydrationWarning>
+    <html lang="pt-BR" className={`${plusJakartaSans.variable} font-sans`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1e1b4b" />
@@ -26,6 +24,7 @@ export default function RootLayout({
           <QueryProvider>
             {children}
           </QueryProvider>
+          <Toaster />
           <ServiceWorkerRegister />
         </ThemeProvider>
       </body>

@@ -8,6 +8,7 @@ const supabase = createClient()
 
 export type Clinic = {
   id: string
+  owner_id: string
   nome: string
   endereco: string | null
   telefone: string | null
@@ -40,22 +41,22 @@ async function fetchMyClinic(): Promise<Clinic | null> {
 
   const { data, error } = await supabase
     .from('clinics')
-    .select('*')
+    .select('id, owner_id, nome, endereco, telefone, created_at')
     .eq('id', profile.clinic_id)
     .single()
 
   if (error) throw error
-  return data
+  return data as unknown as Clinic
 }
 
 async function fetchInvites(): Promise<ClinicInvite[]> {
   const { data, error } = await supabase
     .from('clinic_invites')
-    .select('*')
+    .select('id, clinic_id, email, token, usado, created_at')
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return data
+  return data as unknown as ClinicInvite[]
 }
 
 async function fetchClinicMembers(): Promise<Profile[]> {
@@ -73,7 +74,7 @@ async function fetchClinicMembers(): Promise<Profile[]> {
     .eq('clinic_id', profile.clinic_id)
 
   if (error) throw error
-  return data
+  return data as unknown as Profile[]
 }
 
 async function createClinic(input: { nome: string; endereco?: string; telefone?: string }) {
@@ -82,8 +83,8 @@ async function createClinic(input: { nome: string; endereco?: string; telefone?:
 
   const { data: clinic, error: clinicError } = await supabase
     .from('clinics')
-    .insert([{ nome: input.nome, endereco: input.endereco, telefone: input.telefone }])
-    .select()
+    .insert([{ owner_id: user.id, nome: input.nome, endereco: input.endereco, telefone: input.telefone }])
+    .select('id, owner_id, nome, endereco, telefone, created_at')
     .single()
 
   if (clinicError) throw clinicError
@@ -95,7 +96,7 @@ async function createClinic(input: { nome: string; endereco?: string; telefone?:
 
   if (profileError) throw profileError
 
-  return clinic
+  return clinic as unknown as Clinic
 }
 
 async function createInvite(email: string) {
@@ -111,17 +112,17 @@ async function createInvite(email: string) {
   const { data, error } = await supabase
     .from('clinic_invites')
     .insert([{ clinic_id: profile.clinic_id, email, token, created_by: profile.id }])
-    .select()
+    .select('id, clinic_id, email, token, usado, created_at')
     .single()
 
   if (error) throw error
-  return data
+  return data as unknown as ClinicInvite
 }
 
 async function acceptInvite(token: string) {
   const { data: invite, error: findError } = await supabase
     .from('clinic_invites')
-    .select('*')
+    .select('id, clinic_id, email, token, usado, created_at')
     .eq('token', token)
     .eq('usado', false)
     .single()
@@ -145,7 +146,7 @@ async function acceptInvite(token: string) {
 
   if (usedError) throw usedError
 
-  return invite
+  return invite as unknown as ClinicInvite
 }
 
 export function useMyClinic() {
@@ -155,10 +156,11 @@ export function useMyClinic() {
   })
 }
 
-export function useClinicInvites() {
+export function useClinicInvites(enabled = true) {
   return useQuery({
     queryKey: ['clinic-invites'],
     queryFn: fetchInvites,
+    enabled,
   })
 }
 

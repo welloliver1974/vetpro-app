@@ -108,14 +108,41 @@ export function loadConfig(): AiConfig | null {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return null
   try {
-    return JSON.parse(raw) as AiConfig
+    const parsed = JSON.parse(raw) as AiConfig
+    if (parsed.apiKey && parsed.apiKey.startsWith('v1:')) {
+      parsed.apiKey = parsed.apiKey.slice(3)
+    }
+    return parsed
   } catch {
     return null
   }
 }
 
-export function saveConfig(config: AiConfig) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
+export async function loadConfigAsync(): Promise<AiConfig | null> {
+  if (typeof window === 'undefined') return null
+  const raw = localStorage.getItem(STORAGE_KEY)
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as AiConfig
+    if (parsed.apiKey && parsed.apiKey.startsWith('v1:')) {
+      const { decrypt } = await import('@/lib/crypto')
+      parsed.apiKey = await decrypt(parsed.apiKey.slice(3))
+    }
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+export async function saveConfig(config: AiConfig) {
+  if (config.apiKey) {
+    const { encrypt } = await import('@/lib/crypto')
+    const encrypted = await encrypt(config.apiKey)
+    const toStore = { ...config, apiKey: 'v1:' + encrypted }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore))
+  } else {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
+  }
 }
 
 export function clearConfig() {

@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react'
 import { useAcceptInvite } from '@/hooks/useClinic'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Toaster } from 'sonner'
 import { Loader2, CheckCircle2, XCircle, PawPrint } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -42,7 +41,7 @@ function JoinClinicContent() {
   return (
     <Card className="bg-card border-border w-full max-w-sm">
       <CardHeader className="text-center">
-        <PawPrint className="h-10 w-10 text-indigo-500 mx-auto mb-2" />
+        <PawPrint className="h-10 w-10 text-primary mx-auto mb-2" />
         <CardTitle className="text-card-foreground">Entrar na Clínica</CardTitle>
       </CardHeader>
       <CardContent className="text-center space-y-4">
@@ -75,7 +74,7 @@ function JoinClinicContent() {
           <div className="text-center space-y-2">
             <XCircle className="h-8 w-8 text-red-500 mx-auto" />
             <p className="text-sm text-muted-foreground">
-              {!token ? 'Link inválido' : 'Erro ao aceitar convite'}
+              {token ? 'Erro ao aceitar convite' : 'Link inválido'}
             </p>
             <Link href="/">
               <Button variant="outline" size="sm" className="border-border text-foreground">
@@ -92,7 +91,6 @@ function JoinClinicContent() {
 export default function JoinClinicPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Toaster richColors position="top-center" />
       <Suspense fallback={
         <Card className="bg-card border-border w-full max-w-sm">
           <CardContent className="p-8 text-center">

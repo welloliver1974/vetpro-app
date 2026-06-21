@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import { Loader2, PawPrint } from 'lucide-react'
 
 export default function LoginPage() {
@@ -38,10 +38,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Toaster richColors position="top-center" />
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
-          <PawPrint className="h-10 w-10 text-indigo-500 mx-auto" />
+          <PawPrint className="h-10 w-10 text-primary mx-auto" />
           <h1 className="text-2xl font-bold text-card-foreground">VetPro</h1>
           <p className="text-sm text-muted-foreground">Faça login para continuar</p>
         </div>
@@ -85,7 +84,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           Não tem conta?{' '}
-          <Link href="/auth/signup" className="text-indigo-400 hover:text-indigo-300">
+          <Link href="/auth/signup" className="text-primary hover:text-primary/80">
             Cadastre-se
           </Link>
         </p>

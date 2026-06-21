@@ -23,7 +23,7 @@ export type EquipmentInput = {
 async function fetchEquipments(): Promise<Equipment[]> {
   const { data, error } = await supabase
     .from('equipments')
-    .select('*')
+    .select('id, nome, modelo, ultima_manutencao, created_at')
     .order('created_at', { ascending: false })
 
   if (error) throw error
@@ -37,7 +37,7 @@ async function createEquipment(input: EquipmentInput) {
   const { data, error } = await supabase
     .from('equipments')
     .insert([{ ...input, vet_id: user.id }])
-    .select()
+    .select('id, nome, modelo, ultima_manutencao, created_at')
     .single()
 
   if (error) throw error
@@ -49,7 +49,7 @@ async function updateEquipment(id: string, input: Partial<EquipmentInput>) {
     .from('equipments')
     .update(input)
     .eq('id', id)
-    .select()
+    .select('id, nome, modelo, ultima_manutencao, created_at')
     .single()
 
   if (error) throw error

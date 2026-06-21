@@ -1,12 +1,16 @@
 'use client'
 
-import { useRef } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { FileText, Loader2 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { toast } from 'sonner'
+import type { jsPDF } from 'jspdf'
 import type { Patient } from '@/hooks/usePatients'
 import type { Session } from '@/hooks/useSessions'
+
+type PdfWithAutoTable = jsPDF & { lastAutoTable: { finalY: number } }
 
 type Props = {
   patient: Patient
@@ -15,153 +19,186 @@ type Props = {
 }
 
 export function ReportPDF({ patient, sessions, assinaturaUrl }: Props) {
-  const reportRef = useRef<HTMLDivElement>(null)
-  const loading = false
+  const [loading, setLoading] = useState(false)
 
   async function generatePDF() {
-    if (!reportRef.current) return
+    setLoading(true)
 
-    const { default: jsPDF } = await import('jspdf')
-    const { default: html2canvas } = await import('html2canvas')
+    try {
+      const { default: jsPDF } = await import('jspdf')
+      const { default: autoTable } = await import('jspdf-autotable')
 
-    const canvas = await html2canvas(reportRef.current, {
-      scale: 2,
-      backgroundColor: '#0f172a',
-      useCORS: true,
-    })
+      const pdf = new jsPDF('p', 'mm', 'a4') as PdfWithAutoTable
+      const pageW = pdf.internal.pageSize.width
+      const margin = 20
+      let y = margin
+      const primary = '#6366f1'
+      const dark = '#1e293b'
+      const muted = '#64748b'
 
-    const imgData = canvas.toDataURL('image/png')
-    const pdf = new jsPDF('p', 'mm', 'a4')
-    const imgWidth = 190
-    const imgHeight = (canvas.height * imgWidth) / canvas.width
+      function addFooter() {
+        const footerY = pdf.internal.pageSize.height - 10
+        pdf.setFontSize(8)
+        pdf.setTextColor(muted)
+        pdf.text(`Relatório gerado pelo VetPro App em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}`, pageW / 2, footerY, { align: 'center' })
+      }
 
-    let heightLeft = imgHeight
-    let position = 10
+      // ===== HEADER =====
+      pdf.setFontSize(22)
+      pdf.setTextColor(primary)
+      pdf.text('VetPro — Relatório de Evolução', margin, y)
+      y += 10
+      pdf.setFontSize(9)
+      pdf.setTextColor(muted)
+      pdf.text(`Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}`, margin, y)
+      y += 14
 
-    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight)
-    heightLeft -= pdf.internal.pageSize.height - 20
+      // ===== PATIENT INFO =====
+      autoTable(pdf, {
+        startY: y,
+        theme: 'grid',
+        headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { fontSize: 9, textColor: [30, 41, 59] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        tableLineColor: [226, 232, 240],
+        head: [['Paciente', 'Detalhes']],
+        body: [
+          ['Nome', patient.nome],
+          ['Espécie', patient.especie || '—'],
+          ['Raça', patient.raca || '—'],
+          ['Tutor', patient.tutor_nome || '—'],
+          ['Contato', patient.tutor_contato || '—'],
+        ],
+      })
 
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight + 10
-      pdf.addPage()
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight)
-      heightLeft -= pdf.internal.pageSize.height - 20
+      y = pdf.lastAutoTable.finalY + 12
+
+      // ===== STATS =====
+      if (sessions.length > 0) {
+        const sessComFotos = sessions.filter((s) => s.foto_urls?.length > 0).length
+        const totalMidias = sessions.reduce((sum, s) => sum + (s.foto_urls?.length || 0), 0)
+
+        autoTable(pdf, {
+          startY: y,
+          theme: 'plain',
+          bodyStyles: { fontSize: 9, textColor: [30, 41, 59], halign: 'center' },
+          tableLineColor: [226, 232, 240],
+          tableLineWidth: 0.5,
+          body: [
+            [
+              { content: `Sessões\n${sessions.length}`, styles: { fontSize: 18, fontStyle: 'bold', textColor: [99, 102, 241], halign: 'center' } },
+              { content: `Com Fotos\n${sessComFotos}`, styles: { fontSize: 18, fontStyle: 'bold', textColor: [52, 211, 153], halign: 'center' } },
+              { content: `Total Mídias\n${totalMidias}`, styles: { fontSize: 18, fontStyle: 'bold', textColor: [251, 191, 36], halign: 'center' } },
+            ],
+            [
+              { content: '', styles: { fontSize: 7, textColor: muted } },
+              { content: '', styles: { fontSize: 7, textColor: muted } },
+              { content: '', styles: { fontSize: 7, textColor: muted } },
+            ],
+          ],
+        })
+
+        y = pdf.lastAutoTable.finalY + 12
+      }
+
+      // ===== SESSIONS =====
+      pdf.setFontSize(13)
+      pdf.setTextColor(dark)
+      pdf.text('Histórico de Sessões', margin, y)
+      y += 8
+
+      if (sessions.length === 0) {
+        pdf.setFontSize(10)
+        pdf.setTextColor(muted)
+        pdf.text('Nenhuma sessão registrada.', margin, y)
+      } else {
+        const sessBody = sessions.map((s) => [
+          format(parseISO(s.created_at), 'dd/MM/yyyy', { locale: ptBR }),
+          s.notas || '—',
+          s.notas_evolucao || '—',
+          s.foto_urls?.length ? `${s.foto_urls.length} foto(s)` : '—',
+        ])
+
+        autoTable(pdf, {
+          startY: y,
+          pageBreak: 'always',
+          margin: { top: margin, bottom: margin },
+          theme: 'grid',
+          headStyles: { fillColor: [99, 102, 241], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+          bodyStyles: { fontSize: 8, textColor: [30, 41, 59] },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          tableLineColor: [226, 232, 240],
+          head: [['Data', 'Anotações', 'Evolução', 'Mídias']],
+          body: sessBody,
+          columnStyles: {
+            0: { cellWidth: 25 },
+            1: { cellWidth: 60 },
+            2: { cellWidth: 60 },
+            3: { cellWidth: 25 },
+          },
+          didDrawPage: () => addFooter(),
+        })
+
+        y = pdf.lastAutoTable.finalY + 12
+      }
+
+      // ===== SIGNATURE =====
+      if (assinaturaUrl) {
+        if (y > pdf.internal.pageSize.height - 50) {
+          pdf.addPage()
+          y = margin
+        }
+
+        pdf.setFontSize(9)
+        pdf.setTextColor(muted)
+        pdf.text('Assinatura do Tutor', pageW / 2, y, { align: 'center' })
+        y += 4
+
+        try {
+          const sigImg = new Image()
+          sigImg.crossOrigin = 'anonymous'
+          sigImg.src = assinaturaUrl
+          await new Promise((resolve, reject) => {
+            sigImg.onload = resolve
+            sigImg.onerror = reject
+          })
+          const maxSigW = 80
+          const maxSigH = 20
+          let sigW = sigImg.naturalWidth
+          let sigH = sigImg.naturalHeight
+          if (sigW > maxSigW) { sigH = (sigH * maxSigW) / sigW; sigW = maxSigW }
+          if (sigH > maxSigH) { sigW = (sigW * maxSigH) / sigH; sigH = maxSigH }
+          pdf.addImage(sigImg, 'PNG', (pageW - sigW) / 2, y, sigW, sigH)
+          y += sigH + 12
+        } catch {
+          pdf.setFontSize(9)
+          pdf.setTextColor(muted)
+          pdf.text('(assinatura indisponível para impressão)', pageW / 2, y, { align: 'center' })
+          y += 8
+        }
+      }
+
+      // ===== FOOTER =====
+      addFooter()
+
+      pdf.save(`evolucao-${patient.nome.toLowerCase().replaceAll(/\s+/g, '-')}.pdf`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao gerar PDF')
+    } finally {
+      setLoading(false)
     }
-
-    pdf.save(`evolucao-${patient.nome.toLowerCase().replace(/\s+/g, '-')}.pdf`)
   }
 
   return (
-    <>
-      <Button onClick={generatePDF} disabled={loading}
-        className="bg-muted hover:bg-muted text-card-foreground border border-border gap-2"
-      >
-        {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <FileText className="h-4 w-4" />
-        )}
-        Relatório PDF
-      </Button>
-
-      {/* Hidden report content */}
-      <div ref={reportRef} className="absolute -left-[9999px] top-0" style={{ width: '800px', padding: '40px', background: '#0f172a', color: '#e2e8f0', fontFamily: 'Arial, sans-serif' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px', borderBottom: '1px solid #334155', paddingBottom: '16px' }}>
-          <div style={{ fontSize: '28px' }}>🐾</div>
-          <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#818cf8' }}>VetPro</h1>
-            <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>Relatório de Evolução</p>
-          </div>
-        </div>
-
-        {/* Patient Info */}
-        <div style={{ background: '#1e293b', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0 0 12px 0', color: '#f1f5f9' }}>{patient.nome}</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
-            <div><span style={{ color: '#94a3b8' }}>Espécie:</span> {patient.especie || '-'}</div>
-            <div><span style={{ color: '#94a3b8' }}>Raça:</span> {patient.raca || '-'}</div>
-            <div><span style={{ color: '#94a3b8' }}>Tutor:</span> {patient.tutor_nome || '-'}</div>
-            <div><span style={{ color: '#94a3b8' }}>Contato:</span> {patient.tutor_contato || '-'}</div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        {sessions.length > 0 && (
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-            <div style={{ flex: 1, background: '#1e293b', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#818cf8' }}>{sessions.length}</div>
-              <div style={{ fontSize: '12px', color: '#94a3b8' }}>Sessões</div>
-            </div>
-            <div style={{ flex: 1, background: '#1e293b', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#34d399' }}>{sessions.filter((s) => s.foto_urls?.length > 0).length}</div>
-              <div style={{ fontSize: '12px', color: '#94a3b8' }}>Com Fotos</div>
-            </div>
-            <div style={{ flex: 1, background: '#1e293b', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#fbbf24' }}>
-                {sessions.reduce((sum, s) => sum + (s.foto_urls?.length || 0), 0)}
-              </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8' }}>Total de Mídias</div>
-            </div>
-          </div>
-        )}
-
-        {/* Sessions Timeline */}
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 16px 0', color: '#f1f5f9' }}>Histórico de Sessões</h3>
-        {sessions.length === 0 ? (
-          <p style={{ color: '#64748b', fontSize: '14px' }}>Nenhuma sessão registrada.</p>
-        ) : (
-          <div>
-            {sessions.map((session, idx) => (
-              <div key={session.id} style={{
-                borderLeft: '2px solid #334155',
-                paddingLeft: '20px',
-                paddingBottom: idx === sessions.length - 1 ? '0' : '20px',
-                position: 'relative',
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  left: '-6px',
-                  top: '4px',
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  background: '#818cf8',
-                }} />
-                <p style={{ fontSize: '12px', color: '#818cf8', margin: '0 0 4px 0', fontWeight: 'bold' }}>
-                  {format(parseISO(session.created_at), "d 'de' MMM 'de' yyyy", { locale: ptBR })}
-                </p>
-                {session.notas && (
-                  <p style={{ fontSize: '13px', color: '#cbd5e1', margin: '0 0 4px 0' }}>{session.notas}</p>
-                )}
-                {session.notas_evolucao && (
-                  <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 8px 0', fontStyle: 'italic' }}>
-                    Evolução: {session.notas_evolucao}
-                  </p>
-                )}
-                {session.foto_urls && session.foto_urls.length > 0 && (
-                  <p style={{ fontSize: '11px', color: '#34d399', margin: 0 }}>
-                    📸 {session.foto_urls.length} foto(s)
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Signature */}
-        {assinaturaUrl && (
-          <div style={{ marginTop: '24px', textAlign: 'center' }}>
-            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px' }}>Assinatura do Tutor</p>
-            <img src={assinaturaUrl} alt="Assinatura" style={{ maxHeight: '60px', maxWidth: '300px' }} />
-          </div>
-        )}
-
-        {/* Footer */}
-        <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #334155', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
-          Relatório gerado pelo VetPro App em {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
-        </div>
-      </div>
-    </>
+    <Button onClick={generatePDF} disabled={loading}
+      className="bg-muted hover:bg-muted text-card-foreground border border-border gap-2"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <FileText className="h-4 w-4" />
+      )}
+      Relatório PDF
+    </Button>
   )
 }

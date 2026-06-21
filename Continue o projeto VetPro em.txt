@@ -1,0 +1,121 @@
+Continue o projeto VetPro em:
+
+E:\Apps\vetpro-app
+
+Ordem obrigatória:
+1. Leia README.md primeiro.
+2. Leia supabase-schema.sql e supabase-migration-multiclinica.sql.
+3. Só depois escolha o próximo item pendente mais seguro.
+4. Faça a menor mudança útil possível.
+5. Atualize o README com o que foi feito e o que ainda falta.
+6. Rode lint.
+7. Rode build.
+8. Se algo falhar, corrija antes de encerrar.
+
+Já foi feito:
+- query quebrada de atendimentos corrigida
+- `not-found.tsx` criada
+- owner/admin da clínica corrigido com `owner_id`
+- RLS revisado para isolamento por clínica
+- toast global centralizado no layout
+- `text-indigo-*` removidos
+- queries com `select *` trocadas por seleções explícitas
+- alguns ajustes de responsividade mobile
+- alguns estados vazios
+- README com checkpoint e roadmap atualizados
+
+Ainda falta:
+- testes unitários para hooks/helpers críticos
+- testes de integração/e2e
+- revisão fina de responsividade nas telas restantes
+- estados vazios restantes
+- qualquer item ainda pendente no roadmap do README
+
+Regras:
+- não refatore tudo de uma vez
+- não quebre o que já está funcionando
+- não reintroduza `select *`
+- não reintroduza alias inválido como `pacientes:nome`
+- preserve o isolamento por clínica
+- use o README como fonte de verdade para retomar
+
+Saída esperada:
+- mudanças pequenas
+- README atualizado
+- lint e build verdes
+- backlog sempre consistente
+
+
+#########################################################################
+
+
+Você está continuando o projeto VetPro em:
+E:\Apps\vetpro-app
+
+Antes de qualquer edição, leia:
+- README.md
+- supabase-schema.sql
+- supabase-migration-multiclinica.sql
+
+Se precisar de mais contexto, leia também os arquivos diretamente ligados ao item que for mexer.
+
+Contexto atual do projeto:
+- O app já passou por várias correções estruturais.
+- O lint e o build já estavam passando na última verificação.
+- Já foram corrigidos:
+  - query quebrada de atendimentos em Supabase
+  - página `not-found.tsx`
+  - permissão de owner/admin da clínica
+  - revisão de RLS para isolamento por clínica
+  - toast global centralizado no layout
+  - remoção de `text-indigo-*` restantes
+  - otimização de queries para seleções explícitas
+  - alguns ajustes de responsividade mobile
+  - alguns estados vazios
+- O README contém um checkpoint recente e um roadmap com itens concluídos e pendentes.
+
+Como trabalhar:
+1. Sempre comece pelo README para entender o que já foi feito e o que ainda falta.
+2. Escolha o próximo item mais seguro, pequeno e de maior valor.
+3. Prefira correções incrementais, sem refatorações grandes.
+4. Se algo depender de estado do banco, schema ou policy, confirme no arquivo correspondente antes de assumir.
+5. Depois de cada bloco de mudanças, rode lint e build.
+6. Atualize o README com:
+   - o que foi feito
+   - o que ainda falta
+   - o checkpoint da sessão, se fizer sentido
+7. Não apague mudanças existentes que não sejam suas.
+8. Não faça mudanças grandes sem confirmar que não quebram o fluxo principal.
+
+Prioridades recomendadas agora:
+- testes unitários para hooks e helpers críticos
+- testes de integração/e2e
+- revisão fina de responsividade mobile nas telas restantes
+- estados vazios e feedback visual onde ainda faltarem
+- qualquer item ainda marcado como pendente no roadmap do README
+
+Regras de segurança e qualidade:
+- preserve o isolamento por clínica
+- não reintroduza `select *`
+- não volte a usar alias inválido como `pacientes:nome`
+- mantenha o toast global no layout
+- mantenha o README como fonte de retomada
+- valide tudo antes de encerrar
+
+Checklist rápido de retomada:
+- ler README
+- identificar item pendente
+- editar pouco
+- atualizar README
+- rodar lint
+- rodar build
+- registrar o que ficou pronto e o que ainda falta
+
+Objetivo final:
+Manter o projeto estável, fácil de retomar e com o backlog sempre consistente no README.
+
+
+
+
+
+
