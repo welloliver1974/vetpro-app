@@ -9,7 +9,6 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    environment: VPS_SSH_KEY
 
     steps:
       - uses: actions/checkout@v4
