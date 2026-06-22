@@ -1,6 +1,6 @@
 # VetPro App 🐾
 
-> **Sessão anterior (17/06):** Migramos todas as classes `slate` hardcoded para design tokens CSS (17 arquivos). Adicionamos `loading.tsx` + `error.tsx` no dashboard. Implementamos validação Zod nos formulários de pacientes, equipamentos e protocolos. Próximos passos sugeridos na seção [🤖 IA - Próximas Features](#-ia---próximas-features) e [📋 Roadmap](#-roadmap--melhorias-pendentes).
+> **Última sessão (22/06):** Corrigimos o build que quebrava no VPS/CI sem `.env.local` — causa raiz era o Turbopack inlinhar `createBrowserClient()` no module load. Solução: dynamic import do `@supabase/ssr` dentro de `getModule()` em `lib/supabase/client.ts`. Build verificado com e sem env vars (0 erros). Detalhes no [Checkpoint 22/06](#checkpoint-da-sessão-22062026). Próximos passos sugeridos no [Roadmap](#-roadmap--melhorias-pendentes) e no final do checkpoint.
 
 SaaS de gestão veterinária focado em **fisioterapia e atendimento domiciliar**.  
 Funciona em notebook, tablet e celular.
@@ -795,5 +795,10 @@ O comando é **"continua"** — com isso, ler este checkpoint e seguir os próxi
 - `npm run build` **sem `.env.local`** — 0 erros, todas as 18 páginas pré-renderizadas
 - `npm run build` **com `.env.local`** — 0 erros
 - Commit: `8c4ee56`
+
+### Próximos passos / Como retomar
+1. Build está estável com e sem env vars — o deploy na VPS (Oracle) deve funcionar automaticamente via GitHub Actions
+2. O roadmap tem itens pendentes: #13 Sugestão de Preço (IA), #14 Relatório Semanal Automático, #15 Backup JSON, #16 Auditoria, #17 Testes e2e, #19 Timeline visual, #20 Agendamento recorrente, #21 Notificações WhatsApp, #22 Relatório automático
+3. Para continuar: `npm run dev`, escolher um item do roadmap, implementar, rodar `npm run build` e `npx vitest run` antes de commitar
 
 (End of file - total 769 lines)
