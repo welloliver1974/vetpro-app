@@ -21,10 +21,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /home/ubuntu/vetpro-app
-            cat > .env.local << 'EOF'
-NEXT_PUBLIC_SUPABASE_URL=https://rhugpobguitqlrfiusmh.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_I_049gIVqRFwwqka2khkVQ_0ZLPW42-
-EOF
+            echo "NEXT_PUBLIC_SUPABASE_URL=https://rhugpobguitqlrfiusmh.supabase.co" > .env.local
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_I_049gIVqRFwwqka2khkVQ_0ZLPW42-" >> .env.local
             git pull origin master
             npm ci --legacy-peer-deps
             npm run build
