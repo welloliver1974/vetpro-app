@@ -11,8 +11,6 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Loader2, Building2, Copy, Check, Users, Mail } from 'lucide-react'
 
-export const dynamic = 'force-dynamic'
-
 let supabase: ReturnType<typeof createClient> | null = null
 
 export default function ClinicaPage() {
