@@ -1,6 +1,6 @@
 # VetPro App 🐾
 
-> **Última sessão (22/06):** Item #13 (Sugestão de Preço IA) implementado. Plano detalhado do item #21 (Notificações WhatsApp/E-mail) documentado no README com arquitetura, config, templates, fluxo de disparo, confirmação, histórico e escopo de MVP. Próximos passos: implementar o item #21 seguindo o plano.
+> **Última sessão (22/06):** Item #13 (Sugestão de Preço IA) implementado. Planos detalhados dos itens #21 (Notificações WhatsApp/E-mail) e #30 (Integração Google Calendar /.ics) adicionados ao README com arquitetura, fluxos, tabelas, interface e escopo de MVP. Próximos passos: implementar um dos itens do roadmap.
 
 SaaS de gestão veterinária focado em **fisioterapia e atendimento domiciliar**.  
 Funciona em notebook, tablet e celular.
@@ -172,6 +172,7 @@ Funciona em notebook, tablet e celular.
 | 20 | Agenda: agendamento recorrente | 💡 Funcionalidades |
 | 21 | Notificações: lembrete por WhatsApp/e-mail (webhook) | 💡 Funcionalidades |
 | 22 | Relatório: agendamento automático de PDF mensal | 💡 Funcionalidades |
+| 30 | Integração com Google Calendar / .ics | 💡 Funcionalidades |
 
 ### 🔴 Complexo
 | # | Item | Categoria |
@@ -1054,7 +1055,249 @@ Conforme o vet digita o template, o preview atualiza em tempo real com dados fic
 
 ---
 
+---
+
+## 📅 Plano: Integração com Google Calendar / .ics (Item #30)
+
+> **Status:** 🟡 Pendente — Planejado, aguardando implementação
+> **Esforço estimado:** ~1 dia para .ics, ~2-3 dias para Google Calendar API completa
+
+### Ideia Geral
+
+O veterinário usa a agenda do app, mas também tem compromissos pessoais no Google Calendar ou Apple Calendar.  
+A integração permite que **os atendimentos da VetPro apareçam automaticamente no calendário que ele já usa**, eliminando a necessidade de cadastrar duas vezes.
+
+---
+
+### 1. Opção 1 — Botão "Adicionar ao Calendário" (.ics)
+
+**Mais simples, entrega valor imediato.**
+
+#### Fluxo
+
+```
+[Agenda] → Botão "📅 Adicionar ao Calendário" em cada atendimento
+                │
+                ▼
+        Gera arquivo .ics em memória
+                │
+                ▼
+        Browser faz download do .ics
+                │
+                ▼
+        Usuário abre o arquivo →
+        Google Calendar / Apple Calendar / Outlook
+        pergunta: "Deseja adicionar este evento?"
+```
+
+#### Implementação
+
+**Nova função `lib/calendar.ts`:**
+```typescript
+export function generateIcsEvent(app: Appointment): string
+```
+
+Gera o formato iCalendar padrão:
+```
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//VetPro//PT_BR
+BEGIN:VEVENT
+DTSTART:20260622T140000Z
+DTEND:20260622T150000Z
+SUMMARY:Fisioterapia - Rex
+DESCRIPTION:Paciente: Rex | Tutor: Maria | Tipo: Fisioterapia
+LOCATION:Endereço do paciente (se externo)
+UID:appointment-id@vetpro.app
+END:VEVENT
+END:VCALENDAR
+```
+
+**No componente do atendimento (`agenda/page.tsx`):**
+- Botão "📅" ao lado dos botões de ação
+- Ao clicar: gera .ics, cria blob, faz download
+
+**Prós:**
+- Zero dependência externa
+- Funciona em qualquer dispositivo (Google, Apple, Outlook)
+- Não precisa de OAuth, permissão ou internet
+
+**Contras:**
+- Manual (um por vez)
+- Não sincroniza automaticamente
+
+---
+
+### 2. Opção 2 — Google Calendar API (Sincronização Automática)
+
+#### Fluxo de Autenticação (OAuth 2.0)
+
+```
+[Configurações] → Botão "Conectar Google Calendar"
+                      │
+                      ▼
+          Redireciona para accounts.google.com
+          (escopo: https://www.googleapis.com/auth/calendar.events)
+                      │
+                      ▼
+          Usuário autoriza → Google retorna authorization code
+                      │
+                      ▼
+          Backend troca code por access_token + refresh_token
+                      │
+                      ▼
+          Tokens salvos na tabela `profiles` ou `clinic_calendar_tokens`
+```
+
+#### Fluxo de Sincronização
+
+**Criar / Atualizar atendimento (app → Google):**
+```
+1. Vet cria/edita atendimento na Agenda VetPro
+2. Se o vet tem Google Calendar conectado:
+   a. Chama Edge Function `sync-to-google`
+   b. Edge Function faz POST https://www.googleapis.com/calendar/v3/calendars/primary/events
+   c. Salva `google_event_id` na tabela `appointments`
+3. Se editar: PUT no mesmo event (usando google_event_id)
+4. Se excluir: DELETE no event
+```
+
+**Google → app (bidirecional):**
+- Opção A: **Push notification** via Google Watch API (webhook)
+  - Register channel: `POST https://www.googleapis.com/calendar/v3/calendars/primary/events/watch`
+  - Google notifica o webhook quando algo muda
+  - Edge Function recebe, busca eventos atualizados, atualiza `appointments`
+- Opção B: **Polling** (simples)
+  - A cada 5 min (cron), busca eventos atualizados desde a última verificação
+  - `GET /calendars/primary/events?updatedMin={lastCheck}`
+
+#### Google Cloud Console — Configuração Necessária
+
+1. Criar projeto em https://console.cloud.google.com
+2. Ativar Google Calendar API
+3. Criar OAuth 2.0 Client ID (Web application)
+4. Adicionar URI de redirecionamento: `https://vetpro.housecloud.tec.br/api/auth/google/callback`
+5. Copiar Client ID e Client Secret
+
+#### Variáveis de Ambiente
+
+```env
+GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
+GOOGLE_REDIRECT_URI=https://vetpro.housecloud.tec.br/api/auth/google/callback
+```
+
+#### Novas Rotas
+
+| Rota | Descrição |
+|------|-----------|
+| `/api/auth/google` | Redireciona para Google OAuth |
+| `/api/auth/google/callback` | Recebe code, troca por tokens, redireciona pro app |
+| `Edge Function: sync-to-google` | Cria/atualiza/deleta evento no Google Calendar |
+| `Edge Function: google-webhook` | Recebe notificações do Google Watch API |
+
+#### Tabelas no Banco
+
+**Colunas novas em `appointments`:**
+```sql
+ALTER TABLE appointments ADD COLUMN google_event_id text;
+ALTER TABLE appointments ADD COLUMN google_etag text;
+ALTER TABLE appointments ADD COLUMN last_synced_at timestamp with time zone;
+```
+
+**Nova tabela `clinic_calendar_tokens`:**
+```sql
+CREATE TABLE clinic_calendar_tokens (
+  id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  vet_id uuid REFERENCES profiles(id) UNIQUE,
+  access_token text NOT NULL,
+  refresh_token text NOT NULL,
+  expires_at timestamp with time zone NOT NULL,
+  calendar_id text DEFAULT 'primary',
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);
+```
+
+**Nova tabela `sync_log`:**
+```sql
+CREATE TABLE sync_log (
+  id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  vet_id uuid REFERENCES profiles(id),
+  appointment_id uuid REFERENCES appointments(id),
+  acao text CHECK (acao IN ('create', 'update', 'delete')),
+  destino text CHECK (destino IN ('google', 'vetpro')),
+  status text CHECK (status IN ('ok', 'erro')),
+  erro text,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);
+```
+
+---
+
+### 3. Interface do Usuário
+
+#### Na Página `/configuracoes`
+
+Nova seção **"Calendário"**:
+
+```
+📅 Calendário
+├── Status:            [❌ Não conectado] / [✅ Conectado — email@gmail.com]
+├── Botão:             [Conectar Google Calendar] / [Desconectar]
+├── Última sincronia:  [22/06 às 14:32]
+├── Sincronizar:       [toggle: Automática / Manual]
+├── Bi-direcional:     [toggle: Alterações no Google refletem no app]
+└── Histórico:         [Ver últimas sincronizações →]
+```
+
+#### Na Agenda (Card do Atendimento)
+
+Botão ao lado dos botões de ação:
+
+- Se Google conectado: ícone do Google Calendar (✅ sincronizado / 🔄 pendente)
+- Se não conectado: ícone 📅 "Adicionar ao Calendário" (.ics)
+
+#### Badge de Status no Card
+
+| Badge | Significado |
+|-------|-------------|
+| ✅ Google | Sincronizado com Google Calendar |
+| 🔄 Pendente | Aguardando sincronização |
+| 📅 .ics | Export disponível (sem Google) |
+
+---
+
+### 4. 🚀 MVP — Escopo Mínimo
+
+| Funcionalidade | Incluir no MVP? |
+|----------------|-----------------|
+| Export .ics por atendimento | ✅ Sim |
+| Botão "📅 Adicionar ao calendário" na agenda | ✅ Sim |
+| Google Calendar API — criar evento ao agendar | ❌ Não |
+| Sincronização bidirecional | ❌ Não |
+| Histórico de sincronia | ❌ Não |
+
+**MVP = 1 dia de implementação:**
+1. Criar `lib/calendar.ts` com `generateIcsEvent()`
+2. Adicionar botão "📅" nos cards da agenda
+3. Trigger de download ao clicar
+
+---
+
+### 5. 🔮 Futuro / Expansões Possíveis
+
+- **Google Calendar API completa** (criar/atualizar/deletar automaticamente)
+- **Sincronização bidirecional** via Google Watch API
+- **Suporte a múltiplos calendários** (selecionar qual calendário do Google usar)
+- **Sync com Apple Calendar** via CalDAV
+- **Histórico de sincronia** na página de configurações
+- **Botão "Sincronizar todos agora"** na agenda
+- Indicador visual no calendário semanal de quais eventos já foram sincronizados
+
+---
+
 ### Próximos passos / Como retomar
 1. Build está estável com e sem env vars — o deploy na VPS (Oracle) deve funcionar automaticamente via GitHub Actions
-2. O roadmap tem itens pendentes: #14 Relatório Semanal Automático, #15 Backup JSON, #16 Auditoria, #17 Testes e2e, #19 Timeline visual, #20 Agendamento recorrente, #21 Notificações WhatsApp (plano detalhado acima), #22 Relatório automático
+2. O roadmap tem itens pendentes: #14 Relatório Semanal Automático, #15 Backup JSON, #16 Auditoria, #17 Testes e2e, #19 Timeline visual, #20 Agendamento recorrente, #21 Notificações WhatsApp (plano detalhado acima), #22 Relatório automático, #30 Integração Google Calendar /.ics (plano detalhado acima)
 3. Para continuar: `npm run dev`, escolher um item do roadmap, implementar, rodar `npm run build` e `npx vitest run` antes de commitar
