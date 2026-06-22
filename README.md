@@ -732,4 +732,40 @@ pm2 save
 - [ ] VPS: Nginx rodando e com SSL ok
 - [ ] VPS: PM2 não está em crash loop
 
-(End of file - total 730 lines)
+---
+
+## Checkpoint da Sessão 21/06/2026 (Parte 12 — Diagnóstico Deploy)
+
+### Problema
+O deploy automático via GitHub Actions quebrava o build com erro:
+`@supabase/ssr: Your project's URL and API key are required to create a Supabase client!`
+Erro ocorria durante o prerender da página `/configuracoes/clinica`.
+
+### Investigações e Tentativas (falhas)
+1. ❌ **Remover `envs:` + `echo` do deploy.yml** — `.env.local` no VPS não era lido pelo build
+2. ❌ **`env:` + `envs:` no appleboy/ssh-action** — GitHub Secrets não passavam corretamente
+3. ❌ **`export const dynamic = 'force-dynamic'`** — **opção removida no Next.js 16** (rota segment config, docs oficiais)
+4. ❌ **Heredoc no deploy.yml** — quebrava o parser YAML (linhas não indentadas)
+5. ❌ **Lazy init só na clinica page** — não resolveu porque a causa era mais profunda
+
+### Causa Real
+- `hooks/useClinic.ts` **linha 7**: `const supabase = createClient()` no nível do módulo
+- Qualquer página que importasse hooks desse arquivo disparava `createClient()` durante o **prerender**
+- `createBrowserClient` do `@supabase/ssr` (`node_modules/@supabase/ssr/dist/main/createBrowserClient.js:18`) valida `if (!supabaseUrl || !supabaseKey)` e lança erro se env vars não estiverem disponíveis
+- Além do `useClinic.ts`, outros **9 hooks** têm o mesmo padrão: `useAppointments`, `useEquipments`, `useFinances`, `useMonthlyGoals`, `usePatients`, `usePrescriptions`, `useProtocols`, `useSessions`, `useSupplies`
+
+### O que já foi corrigido
+- ✅ `hooks/useClinic.ts` — lazy init com `getClient()`, `createClient()` só é chamado sob demanda
+- ✅ `app/(dashboard)/configuracoes/clinica/page.tsx` — lazy init do supabase client + removido `dynamic` (não funciona na v16)
+- ✅ `.github/workflows/deploy.yml` — `.env.local` escrito com `echo` de valores hardcoded (sem `$` pra expandir)
+
+### Próximos passos
+1. 🔲 Aplicar lazy init nos 9 hooks restantes com `createClient()` no módulo
+2. 🔲 Verificar `components/layout/Header.tsx` (também tem `createClient()`)
+3. 🔲 Após corrigir todos, build passa sem depender de env vars no prerender
+4. 🔲 Verificar erro de date ao editar paciente (relatado pelo usuário)
+
+### Como retomar
+O comando é **"continua"** — com isso, ler este checkpoint e seguir os próximos passos.
+
+(End of file - total 769 lines)
