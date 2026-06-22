@@ -7,11 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { EmptyState } from '@/components/EmptyState'
-import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Loader2, Building2, Copy, Check, Users, Mail } from 'lucide-react'
-
-let supabase: ReturnType<typeof createClient> | null = null
 
 export default function ClinicaPage() {
   const { data: clinic, isLoading } = useMyClinic()
@@ -23,10 +20,12 @@ export default function ClinicaPage() {
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!supabase) supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
+    ;(async () => {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = await createClient()
+      const { data } = await supabase.auth.getUser()
       setUserId(data.user?.id ?? null)
-    })
+    })()
   }, [])
 
   const canManageInvites = Boolean(clinic && userId && clinic.owner_id === userId)

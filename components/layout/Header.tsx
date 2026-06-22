@@ -8,10 +8,10 @@ import { LogOut, Sun, Moon } from 'lucide-react'
 
 export function Header() {
   const router = useRouter()
-  const supabase = createClient()
   const { theme, setTheme } = useTheme()
 
   async function handleLogout() {
+    const supabase = await createClient()
     await supabase.auth.signOut()
     router.push('/auth/login')
     router.refresh()

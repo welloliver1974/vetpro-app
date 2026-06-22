@@ -126,7 +126,7 @@ export default function AgendaPage() {
     if (assinaturaDataUrl && assinaturaDataUrl.startsWith('data:image')) {
       const blob = await (await fetch(assinaturaDataUrl)).blob()
       const path = `assinaturas/${finishingApp.id}.png`
-      const supabase = createClient()
+      const supabase = await createClient()
       await supabase.storage.from('session-media').upload(path, blob, { upsert: true })
       const { data: { publicUrl } } = supabase.storage.from('session-media').getPublicUrl(path)
       finalAssinaturaUrl = publicUrl

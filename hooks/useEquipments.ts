@@ -4,9 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-let _supabase: ReturnType<typeof createClient> | null = null
-function getClient() {
-  if (!_supabase) _supabase = createClient()
+let _supabase: Awaited<ReturnType<typeof createClient>> | null = null
+async function getClient() {
+  if (!_supabase) _supabase = await createClient()
   return _supabase
 }
 
@@ -25,7 +25,8 @@ export type EquipmentInput = {
 }
 
 async function fetchEquipments(): Promise<Equipment[]> {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('equipments')
     .select('id, nome, modelo, ultima_manutencao, created_at')
     .order('created_at', { ascending: false })
@@ -35,10 +36,11 @@ async function fetchEquipments(): Promise<Equipment[]> {
 }
 
 async function createEquipment(input: EquipmentInput) {
-  const { data: { user } } = await getClient().auth.getUser()
+  const sb = await getClient()
+  const { data: { user } } = await sb.auth.getUser()
   if (!user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await getClient()
+  const { data, error } = await sb
     .from('equipments')
     .insert([{ ...input, vet_id: user.id }])
     .select('id, nome, modelo, ultima_manutencao, created_at')
@@ -49,7 +51,8 @@ async function createEquipment(input: EquipmentInput) {
 }
 
 async function updateEquipment(id: string, input: Partial<EquipmentInput>) {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('equipments')
     .update(input)
     .eq('id', id)
@@ -61,7 +64,8 @@ async function updateEquipment(id: string, input: Partial<EquipmentInput>) {
 }
 
 async function deleteEquipment(id: string) {
-  const { error } = await getClient()
+  const sb = await getClient()
+  const { error } = await sb
     .from('equipments')
     .delete()
     .eq('id', id)

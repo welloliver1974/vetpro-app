@@ -4,9 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-let _supabase: ReturnType<typeof createClient> | null = null
-function getClient() {
-  if (!_supabase) _supabase = createClient()
+let _supabase: Awaited<ReturnType<typeof createClient>> | null = null
+async function getClient() {
+  if (!_supabase) _supabase = await createClient()
   return _supabase
 }
 
@@ -39,7 +39,8 @@ export type SessionInput = {
 }
 
 async function fetchSessionsByPatient(patientId: string): Promise<Session[]> {
-  const { data: appointments } = await getClient()
+  const sb = await getClient()
+  const { data: appointments } = await sb
     .from('appointments')
     .select('id')
     .eq('paciente_id', patientId)
@@ -47,7 +48,7 @@ async function fetchSessionsByPatient(patientId: string): Promise<Session[]> {
   if (!appointments?.length) return []
 
   const ids = appointments.map((a) => a.id)
-  const { data, error } = await getClient()
+  const { data, error } = await sb
     .from('sessions')
     .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, peso, foto_urls, created_at, appointments!inner(id, data, tipo, valor, patients!inner(nome, especie))')
     .in('appointment_id', ids)
@@ -58,7 +59,8 @@ async function fetchSessionsByPatient(patientId: string): Promise<Session[]> {
 }
 
 async function fetchSessionsByAppointment(appointmentId: string): Promise<Session[]> {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('sessions')
     .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, peso, foto_urls, created_at')
     .eq('appointment_id', appointmentId)
@@ -69,7 +71,8 @@ async function fetchSessionsByAppointment(appointmentId: string): Promise<Sessio
 }
 
 async function createSession(input: SessionInput) {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('sessions')
     .insert([input])
     .select('id, appointment_id, protocolo_id, notas, notas_evolucao, custo, peso, foto_urls, created_at')
@@ -80,7 +83,8 @@ async function createSession(input: SessionInput) {
 }
 
 async function updateSession(id: string, input: Partial<SessionInput & { foto_urls: string[] }>) {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('sessions')
     .update(input)
     .eq('id', id)
@@ -92,13 +96,14 @@ async function updateSession(id: string, input: Partial<SessionInput & { foto_ur
 }
 
 export async function uploadFile(file: File, path: string): Promise<string> {
-  const { error } = await getClient().storage
+  const sb = await getClient()
+  const { error } = await sb.storage
     .from('session-media')
     .upload(path, file)
 
   if (error) throw error
 
-  const { data: { publicUrl } } = getClient().storage
+  const { data: { publicUrl } } = sb.storage
     .from('session-media')
     .getPublicUrl(path)
 

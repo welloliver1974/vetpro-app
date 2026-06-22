@@ -6,9 +6,9 @@ import { toast } from 'sonner'
 import type { z } from 'zod'
 import type { monthlyGoalSchema } from '@/lib/validations'
 
-let _supabase: ReturnType<typeof createClient> | null = null
-function getClient() {
-  if (!_supabase) _supabase = createClient()
+let _supabase: Awaited<ReturnType<typeof createClient>> | null = null
+async function getClient() {
+  if (!_supabase) _supabase = await createClient()
   return _supabase
 }
 
@@ -24,7 +24,8 @@ export type MonthlyGoal = {
 export type MonthlyGoalInput = z.infer<typeof monthlyGoalSchema>
 
 async function fetchMonthlyGoals(): Promise<MonthlyGoal[]> {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('monthly_goals')
     .select('*')
     .order('ano', { ascending: false })
@@ -35,10 +36,11 @@ async function fetchMonthlyGoals(): Promise<MonthlyGoal[]> {
 }
 
 async function upsertMonthlyGoal(input: MonthlyGoalInput) {
-  const { data: user } = await getClient().auth.getUser()
+  const sb = await getClient()
+  const { data: user } = await sb.auth.getUser()
   if (!user.user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await getClient()
+  const { data, error } = await sb
     .from('monthly_goals')
     .upsert({
       vet_id: user.user.id,
@@ -57,7 +59,8 @@ async function upsertMonthlyGoal(input: MonthlyGoalInput) {
 }
 
 async function deleteMonthlyGoal(id: string) {
-  const { error } = await getClient()
+  const sb = await getClient()
+  const { error } = await sb
     .from('monthly_goals')
     .delete()
     .eq('id', id)

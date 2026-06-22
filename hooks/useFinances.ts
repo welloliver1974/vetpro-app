@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { format, parseISO } from 'date-fns'
 
-let _supabase: ReturnType<typeof createClient> | null = null
-function getClient() {
-  if (!_supabase) _supabase = createClient()
+let _supabase: Awaited<ReturnType<typeof createClient>> | null = null
+async function getClient() {
+  if (!_supabase) _supabase = await createClient()
   return _supabase
 }
 
@@ -29,7 +29,8 @@ export type CompletedAppointment = {
 }
 
 async function fetchCompletedAppointments(): Promise<CompletedAppointment[]> {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .select('id, paciente_id, data, tipo, valor, forma_pagamento, assinatura_url, created_at, patients(nome, especie, tutor_nome, tutor_contato, endereco)')
     .eq('status', 'concluido')
@@ -45,7 +46,8 @@ async function fetchTodaySummary() {
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .select('valor, forma_pagamento')
     .eq('status', 'concluido')
@@ -68,7 +70,8 @@ async function fetchMonthSummary() {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .select('valor, forma_pagamento')
     .eq('status', 'concluido')
@@ -94,7 +97,8 @@ export async function fetchWeekSessions() {
   const sunday = new Date(monday)
   sunday.setDate(monday.getDate() + 7)
 
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .select('data, tipo')
     .eq('status', 'concluido')
@@ -116,7 +120,8 @@ export async function fetchWeekSessions() {
 }
 
 async function fetchPeriodSummary(startDate: string, endDate: string) {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .select('valor, forma_pagamento, tipo')
     .eq('status', 'concluido')
@@ -137,7 +142,8 @@ async function fetchPeriodSummary(startDate: string, endDate: string) {
 }
 
 async function fetchPeriodSessions(startDate: string, endDate: string) {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .select('data')
     .eq('status', 'concluido')
@@ -158,7 +164,8 @@ async function fetchPeriodSessions(startDate: string, endDate: string) {
 }
 
 async function fetchPeriodDailyRevenue(startDate: string, endDate: string) {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .select('data, valor')
     .eq('status', 'concluido')
@@ -242,7 +249,8 @@ export function useWeekSessions() {
 type CostSummary = { custo_total: number; receita_total: number; margem_total: number }
 
 async function fetchCostSummary(): Promise<CostSummary> {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .select('valor, sessions!inner(custo)')
     .eq('status', 'concluido')
@@ -261,7 +269,8 @@ async function fetchCostSummary(): Promise<CostSummary> {
 type MonthlyRevenue = { ano: number; mes: number; total: number }
 
 async function fetchRevenueByMonth(): Promise<MonthlyRevenue[]> {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .select('data, valor')
     .eq('status', 'concluido')

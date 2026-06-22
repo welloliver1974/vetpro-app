@@ -21,10 +21,12 @@ function JoinClinicContent() {
 
   useEffect(() => {
     if (!token) return
-    createClient().auth.getUser().then(({ data }) => {
+    ;(async () => {
+      const supabase = await createClient()
+      const { data } = await supabase.auth.getUser()
       if (data.user) setStatus('ready')
       else router.push(`/auth/login?redirect=/auth/join-clinic?token=${token}`)
-    })
+    })()
   }, [token, router])
 
   async function handleAccept() {

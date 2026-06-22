@@ -4,9 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-let _supabase: ReturnType<typeof createClient> | null = null
-function getClient() {
-  if (!_supabase) _supabase = createClient()
+let _supabase: Awaited<ReturnType<typeof createClient>> | null = null
+async function getClient() {
+  if (!_supabase) _supabase = await createClient()
   return _supabase
 }
 
@@ -37,7 +37,8 @@ export type SupplyInput = {
 }
 
 async function fetchSupplies(): Promise<Supply[]> {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('supplies')
     .select('*')
     .order('created_at', { ascending: false })
@@ -47,10 +48,11 @@ async function fetchSupplies(): Promise<Supply[]> {
 }
 
 async function createSupply(input: SupplyInput) {
-  const { data: { user } } = await getClient().auth.getUser()
+  const sb = await getClient()
+  const { data: { user } } = await sb.auth.getUser()
   if (!user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await getClient()
+  const { data, error } = await sb
     .from('supplies')
     .insert([{ ...input, vet_id: user.id }])
     .select('*')
@@ -61,7 +63,8 @@ async function createSupply(input: SupplyInput) {
 }
 
 async function updateSupply(id: string, input: Partial<SupplyInput>) {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('supplies')
     .update(input)
     .eq('id', id)
@@ -73,7 +76,8 @@ async function updateSupply(id: string, input: Partial<SupplyInput>) {
 }
 
 async function deleteSupply(id: string) {
-  const { error } = await getClient()
+  const sb = await getClient()
+  const { error } = await sb
     .from('supplies')
     .delete()
     .eq('id', id)

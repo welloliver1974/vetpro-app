@@ -134,7 +134,8 @@ export default function PatientDetailPage() {
     setUploading(true)
 
     try {
-      const supabase = (await import('@/lib/supabase/client')).createClient()
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = await createClient()
       const { data: { user } } = await supabase.auth.getUser()
       const uploadedUrls: string[] = []
 

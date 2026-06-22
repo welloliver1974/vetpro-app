@@ -4,9 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-let _supabase: ReturnType<typeof createClient> | null = null
-function getClient() {
-  if (!_supabase) _supabase = createClient()
+let _supabase: Awaited<ReturnType<typeof createClient>> | null = null
+async function getClient() {
+  if (!_supabase) _supabase = await createClient()
   return _supabase
 }
 
@@ -28,7 +28,8 @@ export type ProtocolInput = {
 }
 
 async function fetchProtocols(): Promise<Protocol[]> {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('protocols')
     .select('id, equipamento_id, nome, descricao, configuracoes_padrao, created_at, equipments(nome, modelo)')
     .order('created_at', { ascending: false })
@@ -38,10 +39,11 @@ async function fetchProtocols(): Promise<Protocol[]> {
 }
 
 async function createProtocol(input: ProtocolInput) {
-  const { data: { user } } = await getClient().auth.getUser()
+  const sb = await getClient()
+  const { data: { user } } = await sb.auth.getUser()
   if (!user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await getClient()
+  const { data, error } = await sb
     .from('protocols')
     .insert([{ ...input, vet_id: user.id }])
     .select('id, equipamento_id, nome, descricao, configuracoes_padrao, created_at, equipments(nome, modelo)')
@@ -52,7 +54,8 @@ async function createProtocol(input: ProtocolInput) {
 }
 
 async function updateProtocol(id: string, input: Partial<ProtocolInput>) {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('protocols')
     .update(input)
     .eq('id', id)
@@ -64,7 +67,8 @@ async function updateProtocol(id: string, input: Partial<ProtocolInput>) {
 }
 
 async function deleteProtocol(id: string) {
-  const { error } = await getClient()
+  const sb = await getClient()
+  const { error } = await sb
     .from('protocols')
     .delete()
     .eq('id', id)

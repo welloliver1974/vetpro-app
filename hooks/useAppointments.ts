@@ -4,9 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-let _supabase: ReturnType<typeof createClient> | null = null
-function getClient() {
-  if (!_supabase) _supabase = createClient()
+let _supabase: Awaited<ReturnType<typeof createClient>> | null = null
+async function getClient() {
+  if (!_supabase) _supabase = await createClient()
   return _supabase
 }
 
@@ -32,7 +32,8 @@ export type AppointmentInput = {
 }
 
 async function fetchAppointments(): Promise<Appointment[]> {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .select('id, paciente_id, data, tipo, status, valor, forma_pagamento, assinatura_url, created_at, patients(nome, especie, endereco)')
     .order('data', { ascending: true })
@@ -42,10 +43,11 @@ async function fetchAppointments(): Promise<Appointment[]> {
 }
 
 async function createAppointment(input: AppointmentInput) {
-  const { data: { user } } = await getClient().auth.getUser()
+  const sb = await getClient()
+  const { data: { user } } = await sb.auth.getUser()
   if (!user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .insert([{ ...input, vet_id: user.id }])
     .select('id, paciente_id, data, tipo, status, valor, forma_pagamento, assinatura_url, created_at, patients(nome, especie, endereco)')
@@ -56,7 +58,8 @@ async function createAppointment(input: AppointmentInput) {
 }
 
 async function updateAppointment(id: string, updates: Partial<Appointment>) {
-  const { data, error } = await getClient()
+  const sb = await getClient()
+  const { data, error } = await sb
     .from('appointments')
     .update(updates)
     .eq('id', id)
@@ -68,7 +71,8 @@ async function updateAppointment(id: string, updates: Partial<Appointment>) {
 }
 
 async function deleteAppointment(id: string) {
-  const { error } = await getClient()
+  const sb = await getClient()
+  const { error } = await sb
     .from('appointments')
     .delete()
     .eq('id', id)
