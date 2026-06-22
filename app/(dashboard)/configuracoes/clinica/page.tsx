@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Loader2, Building2, Copy, Check, Users, Mail } from 'lucide-react'
 
-const supabase = createClient()
+let supabase: ReturnType<typeof createClient> | null = null
 
 export default function ClinicaPage() {
   const { data: clinic, isLoading } = useMyClinic()
@@ -23,6 +23,7 @@ export default function ClinicaPage() {
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!supabase) supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null)
     })
