@@ -1,6 +1,6 @@
 # VetPro App 🐾
 
-> **Última sessão (22/06):** Implementamos o item #13 do roadmap — Sugestão de Preço (IA). Botão "Sugerir" no modal de finalizar atendimento que usa `useChat()` para sugerir preço baseado em tipo, espécie e histórico médio. Build + lint + 77 testes — 0 erros. Detalhes no [Checkpoint 22/06](#checkpoint-da-sessão-22062026). Próximos passos sugeridos no [Roadmap](#-roadmap--melhorias-pendentes) e no final do checkpoint.
+> **Última sessão (22/06):** Item #13 (Sugestão de Preço IA) implementado. Plano detalhado do item #21 (Notificações WhatsApp/E-mail) documentado no README com arquitetura, config, templates, fluxo de disparo, confirmação, histórico e escopo de MVP. Próximos passos: implementar o item #21 seguindo o plano.
 
 SaaS de gestão veterinária focado em **fisioterapia e atendimento domiciliar**.  
 Funciona em notebook, tablet e celular.
@@ -803,9 +803,258 @@ O comando é **"continua"** — com isso, ler este checkpoint e seguir os próxi
 - Tratamento de erro com toast caso a IA não esteja configurada ou retorne valor inválido
 - Segue o mesmo padrão dos demais hooks de IA (`useChat`) usados no app
 
+---
+
+## 📱 Plano: Notificações WhatsApp / E-mail (Item #21)
+
+> **Status:** 🟡 Pendente — Planejado, aguardando implementação
+> **Esforço estimado:** ~1 dia para MVP
+
+### Ideia Geral
+
+Atualmente o app só notifica o **veterinário** via Push API (navegador) 15 min antes do atendimento.  
+A proposta é **avisar o tutor do paciente** via WhatsApp e/ou e-mail, usando o `tutor_contato` já cadastrado no paciente.
+
+### O Que Já Existe (pronto, sem precisar criar)
+
+| Item | Onde |
+|------|------|
+| `tutor_contato` no paciente | `hooks/usePatients.ts` — campo `Patient.tutor_contato` |
+| `tutor_nome` no paciente | `hooks/usePatients.ts` — campo `Patient.tutor_nome` |
+| Dados do atendimento (data, tipo, paciente) | `hooks/useAppointments.ts` |
+| `useNotifications` com Push API | `hooks/useNotifications.ts` — avisa só o vet no navegador |
+| Padrão de página de config com chaves | `/configuracoes` — já existe seção de IA com provedor + chave |
+| Padrão de armazenamento de config | `lib/crypto.ts` — AES-GCM no localStorage (ou podemos migrar pra tabela `profiles`/`clinics`) |
+
+---
+
+### 1. 📋 Cadastro do Contato do Tutor
+
+**Já resolvido.** O veterinário preenche `tutor_contato` ao cadastrar ou editar o paciente (`/pacientes`).  
+O campo aceita tanto telefone (WhatsApp) quanto e-mail.
+
+**Melhoria sugerida (futura):** Adicionar validação com máscara de telefone (`(11) 99999-9999`) e detecção automática se é WhatsApp ou e-mail.
+
+---
+
+### 2. ⚙️ Configuração (Página `/configuracoes`)
+
+Nova seção **"Notificações"** seguindo o mesmo padrão da seção de IA:
+
+#### Provedores de WhatsApp
+
+| Provedor | API | Custo | Recomendado para |
+|----------|-----|-------|------------------|
+| **Evolution API** | Self-hosted via webhook | Gratuito (seu servidor) | MVPs, controle total |
+| **Z-API** | REST + Webhook | ~R$ 29/mês | Simples, nacional |
+| **Twilio** | REST API | ~$0.005/msg | Escalável, internacional |
+
+#### Provedores de E-mail
+
+| Provedor | API | Custo |
+|----------|-----|-------|
+| **Resend** | REST | 100 emails/dia grátis |
+| **SendGrid** | REST | 100 emails/dia grátis |
+| **SMTP custom** | SMTP | Variável |
+
+#### Campos da Configuração
+
+```
+📱 WhatsApp
+├── Ativar WhatsApp          [toggle on/off]
+├── Provedor                 [select: Evolution API / Z-API / Twilio]
+├── URL do Webhook/API        [input] — ex: https://evo.seusite.com.br/message
+├── API Key / Token           [input password]
+├── Número remetente          [input] — ex: 5511999999999
+└── Enviar lembretes         [select: Ao agendar / 1h antes / Ambos]
+
+📧 E-mail
+├── Ativar E-mail             [toggle on/off]
+├── Provedor                  [select: Resend / SendGrid / SMTP]
+├── API Key                   [input password]
+├── E-mail remetente          [input] — ex: contato@vetpro.app
+└── Enviar lembretes         [select: Ao agendar / 1h antes / Ambos]
+
+📝 Template da Mensagem
+└── Template WhatsApp         [textarea] — padrão:
+    "🐾 Olá {{tutor}}! Lembrete: {{paciente}} tem consulta de {{tipo}} 
+    em {{data}} às {{hora}} com Dr. {{vet}}. Confirme aqui: {{link}}"
+
+└── Template E-mail           [textarea] — padrão:
+    "Olá {{tutor}},\n\nLembrete: {{paciente}} tem consulta de {{tipo}} 
+    em {{data}} às {{hora}} com Dr. {{vet}}.\n\nConfirme: {{link}}\n\n
+    {{#if endereco}}📍 Endereço: {{endereco}}{{/if}}"
+```
+
+**Variáveis disponíveis nos templates:**
+
+| Variável | Origem |
+|----------|--------|
+| `{{tutor}}` | `patients.tutor_nome` |
+| `{{paciente}}` | `patients.nome` |
+| `{{especie}}` | `patients.especie` |
+| `{{tipo}}` | `appointments.tipo` → "Fisioterapia" / "Clínico" / "Externo" |
+| `{{data}}` | `appointments.data` formatada (dd/MM/yyyy) |
+| `{{hora}}` | `appointments.data` formatada (HH:mm) |
+| `{{vet}}` | `profiles.nome` do veterinário logado |
+| `{{link}}` | Link de confirmação gerado automaticamente |
+| `{{endereco}}` | `patients.endereco` (só para tipo externo) |
+
+**Onde armazenar:** Na tabela `profiles` (coluna `notificacoes_config` do tipo `jsonb`) ou em uma nova tabela `notification_configs`. Seguro pois a Edge Function lê do banco, não do client.
+
+---
+
+### 3. 📨 Disparo das Notificações
+
+#### Arquitetura
+
+```
+[Agenda - Client] → createAppointment()
+                          │
+                          ▼
+              Supabase Edge Function (send-reminder)
+                          │
+                          ├──► Evolution API / Z-API (WhatsApp)
+                          │
+                          └──► Resend / SendGrid (E-mail)
+```
+
+**Por que Edge Function?**  
+As chaves de API dos provedores não podem ficar no client (browser). A Edge Function roda no servidor Supabase, lê as configs do banco, e faz as chamadas seguras.
+
+#### Fluxo de Disparo
+
+**Momento 1 — Ao criar o agendamento (confirmação):**
+```
+1. Vet cria atendimento na Agenda
+2. `createAppointment()` chama Edge Function `send-reminder`
+3. Edge Function busca:
+   - Config do vet (provedor, chave, template)
+   - Dados do paciente (nome, tutor_contato, tutor_nome)
+   - Dados do atendimento (data, hora, tipo)
+4. Gera token único de confirmação
+5. Salva token em `appointments.confirmation_token`
+6. Envia WhatsApp/E-mail com template + link de confirmação
+```
+
+**Momento 2 — 1 hora antes (lembrete):**
+```
+1. Supabase pg_cron (ou job externo) roda a cada 15 min
+2. Busca appointments com data entre agora e agora+1h
+3. Para cada um, verifica se já enviou lembrete (flag `lembrete_enviado`)
+4. Envia WhatsApp/E-mail com template de lembrete
+5. Marca `lembrete_enviado = true`
+```
+
+**Observação:** O pg_cron pode não estar disponível no plano Free da Supabase. Alternativa: usar um GitHub Action com cron, ou implementar o job no próprio VPS.
+
+---
+
+### 4. ✅ Confirmação com Link
+
+**Tabela `appointments`** — novas colunas:
+
+```sql
+ALTER TABLE appointments ADD COLUMN confirmation_token text UNIQUE;
+ALTER TABLE appointments ADD COLUMN confirmed_at timestamp with time zone;
+ALTER TABLE appointments ADD COLUMN lembrete_enviado boolean DEFAULT false;
+```
+
+**Rota `/confirmar?token=xxx`** (página pública, sem auth):
+```
+1. Acessa vetpro.app/confirmar?token=abc123
+2. Tela amigável: "✅ Presença confirmada! Obrigado, {{tutor}}!"
+3. Atualiza `appointments.confirmed_at = now()`
+```
+
+**Na Agenda do vet:**
+- Badge "✅ Confirmado" no card do atendimento
+- Se não confirmou após 24h do envio, badge "⏳ Aguardando"
+
+---
+
+### 5. 📊 Histórico de Notificações
+
+**Nova tabela `notification_log`:**
+```sql
+CREATE TABLE notification_log (
+  id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+  vet_id uuid REFERENCES profiles(id),
+  appointment_id uuid REFERENCES appointments(id),
+  tipo_envio text NOT NULL CHECK (tipo_envio IN ('whatsapp', 'email')),
+  destinatario text NOT NULL,
+  status text NOT NULL DEFAULT 'enviado' CHECK (status IN ('enviado', 'erro', 'lido')),
+  mensagem text,
+  erro text,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);
+```
+
+**Na página `/configuracoes`:**
+- Tabela com últimas 50 notificações
+- Colunas: Data, Paciente, Tutor, Tipo (WhatsApp/Email), Status (enviado/erro)
+- Botão "Reenviar" para notificações com erro
+
+---
+
+### 6. 🖼️ Preview da Mensagem
+
+Na tela de configuração, um **card de preview** ao lado do template:
+
+```
+┌──────────────────────────────────┐
+│  📱 WhatsApp Preview              │
+│  ┌──────────────────────────┐    │
+│  │ 🐾 Olá Maria!             │    │
+│  │                           │    │
+│  │ Lembrete: Rex tem         │    │
+│  │ consulta de Fisioterapia  │    │
+│  │ amanhã às 14h.            │    │
+│  │                           │    │
+│  │ Confirme aqui 👇          │    │
+│  │ [✅ Confirmar Presença]   │    │
+│  └──────────────────────────┘    │
+└──────────────────────────────────┘
+```
+
+Conforme o vet digita o template, o preview atualiza em tempo real com dados fictícios.
+
+---
+
+### 7. 🚀 MVP — Escopo Mínimo para Lançar
+
+| Funcionalidade | Incluir no MVP? |
+|----------------|-----------------|
+| WhatsApp via Evolution API (webhook) | ✅ Sim |
+| Template fixo (sem customização) | ✅ Sim |
+| Disparo ao criar agendamento | ✅ Sim |
+| Lembrete 1h antes | ❌ Não (job separado) |
+| Confirmação com link | ❌ Não |
+| Histórico de notificações | ❌ Não |
+| E-mail | ❌ Não |
+| Preview do template | ❌ Não |
+
+**MVP = 1 dia de implementação:**
+1. Edge Function `send-reminder` (Evolution API)
+2. Trigger no client ao criar appointment
+3. Config na página `/configuracoes`
+4. Tabela `notification_log`
+
+---
+
+### 8. 🔮 Futuro / Expansões Possíveis
+
+- **Template editável com preview** (item #21 completo)
+- **Confirmação com token** e badge na agenda
+- **Lembrete 1h antes** via cron
+- **E-mail** com resumo + link Google Maps pra atendimentos externos
+- **Notificação em lote** — avisar múltiplos tutores de uma vez
+- **Status "lido"** no WhatsApp (via webhook de retorno)
+- **Agendamento recorrente** (#20) já disparar notificação automática
+
+---
+
 ### Próximos passos / Como retomar
 1. Build está estável com e sem env vars — o deploy na VPS (Oracle) deve funcionar automaticamente via GitHub Actions
-2. O roadmap tem itens pendentes: #14 Relatório Semanal Automático, #15 Backup JSON, #16 Auditoria, #17 Testes e2e, #19 Timeline visual, #20 Agendamento recorrente, #21 Notificações WhatsApp, #22 Relatório automático
+2. O roadmap tem itens pendentes: #14 Relatório Semanal Automático, #15 Backup JSON, #16 Auditoria, #17 Testes e2e, #19 Timeline visual, #20 Agendamento recorrente, #21 Notificações WhatsApp (plano detalhado acima), #22 Relatório automático
 3. Para continuar: `npm run dev`, escolher um item do roadmap, implementar, rodar `npm run build` e `npx vitest run` antes de commitar
-
-(End of file - total 769 lines)
