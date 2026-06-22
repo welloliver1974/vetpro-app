@@ -768,4 +768,32 @@ Erro ocorria durante o prerender da página `/configuracoes/clinica`.
 ### Como retomar
 O comando é **"continua"** — com isso, ler este checkpoint e seguir os próximos passos.
 
+---
+
+## Checkpoint da Sessão 22/06/2026
+
+### 🔥 Build Fix: Dynamic Import do @supabase/ssr
+
+**Problema:** Build quebrava durante pré-renderização estática de `/configuracoes/clinica` quando variáveis de ambiente não estavam disponíveis (ex: CI/VPS sem `.env.local`). Erro: `@supabase/ssr: Your project's URL and API key are required to create a Supabase client!`
+
+**Causa raiz (depois de muitas tentativas falhas):** Turbopack inlinhava `createBrowserClient(url, key)` como IIFE no load do módulo `lib/supabase/client.ts`. Mesmo dentro de uma função, a chamada era içada (hoisted) para execução imediata durante o module evaluation no prerender.
+
+**Solução final:** O `import { createBrowserClient } from '@supabase/ssr'` **nunca** é importado estaticamente. Em vez disso, `lib/supabase/client.ts` faz `await import('@supabase/ssr')` sob demanda dentro de `getModule()`, que só roda quando `createClient()` é invocado de fato.
+
+**Mudanças:**
+- `lib/supabase/client.ts`: dynamic import + cache do módulo em closure (nunca eval `createBrowserClient` no module level)
+- 9 hooks com lazy init `getClient()`: uso de `Awaited<ReturnType<typeof createClient>>` + `await createClient()`
+- `Header.tsx`, páginas de auth, `agenda/page.tsx`, `configuracoes/clinica/page.tsx`, `pacientes/[id]/page.tsx`: adaptados para `createClient()` assíncrono
+- `pacientes/[id]/page.tsx`: já usava dynamic import da lib, mas faltava `await` no `createClient()`
+
+**Tentativas que falharam (apenas para registro):**
+1. ❌ `export const dynamic = 'force-dynamic'` — removido no Next.js 16
+2. ❌ Template literals e variáveis intermediárias (`const url = \`${...}\``) — Turbopack ignorava
+3. ❌ Remover import da página específica — o chunk SSR compartilhado ainda continha o IIFE
+
+### ✅ Resultado
+- `npm run build` **sem `.env.local`** — 0 erros, todas as 18 páginas pré-renderizadas
+- `npm run build` **com `.env.local`** — 0 erros
+- Commit: `8c4ee56`
+
 (End of file - total 769 lines)
