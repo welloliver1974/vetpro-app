@@ -52,6 +52,12 @@ interface AnamneseDraft {
   sexo: string
 }
 
+function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return ''
+  const parts = value.split('T')
+  return parts[0] || ''
+}
+
 export default function PatientDetailPage() {
   const params = useParams()
   const patientId = params.id as string
@@ -92,7 +98,7 @@ export default function PatientDetailPage() {
       cor_pelagem: patient.cor_pelagem || '',
       peso: patient.peso,
       microchip: patient.microchip || '',
-      data_nascimento: patient.data_nascimento || '',
+      data_nascimento: toDateInputValue(patient.data_nascimento),
       sexo: patient.sexo || '',
     })
     setEditingAnamnese(true)
@@ -652,7 +658,7 @@ export default function PatientDetailPage() {
                   {editingAnamnese ? (
                     <Input
                       type="date"
-                      value={anamneseDraft?.data_nascimento ?? ''}
+                      value={toDateInputValue(anamneseDraft?.data_nascimento)}
                       onChange={(e) => setAnamneseDraft((f: AnamneseDraft | null) => f ? { ...f, data_nascimento: e.target.value } : f)}
                       className="h-8 text-sm"
                     />

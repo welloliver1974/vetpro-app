@@ -7,7 +7,7 @@ export const patientSchema = z.object({
   tutor_nome: z.string().optional().default(''),
   tutor_contato: z.string().optional().default(''),
   endereco: z.string().optional().default(''),
-  data_nascimento: z.string().optional().default(''),
+  data_nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato inválido (YYYY-MM-DD)').optional().or(z.literal('')).default(''),
   sexo: z.string().optional().default(''),
   peso: z.coerce.number().positive('Deve ser positivo').optional().nullable(),
   cor_pelagem: z.string().optional().default(''),

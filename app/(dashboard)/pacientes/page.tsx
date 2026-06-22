@@ -33,6 +33,7 @@ export default function PatientsPage() {
   const [editing, setEditing] = useState<Patient | null>(null)
   const [form, setForm] = useState<PatientInput>({
     nome: '', especie: '', raca: '', tutor_nome: '', tutor_contato: '', endereco: '',
+    data_nascimento: '', sexo: '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -52,6 +53,8 @@ export default function PatientsPage() {
       tutor_nome: patient.tutor_nome || '',
       tutor_contato: patient.tutor_contato || '',
       endereco: patient.endereco || '',
+      data_nascimento: patient.data_nascimento || '',
+      sexo: patient.sexo || '',
     })
     setErrors({})
     setDialogOpen(true)

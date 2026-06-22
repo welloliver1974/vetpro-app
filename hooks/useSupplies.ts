@@ -4,7 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-const supabase = createClient()
+let _supabase: ReturnType<typeof createClient> | null = null
+function getClient() {
+  if (!_supabase) _supabase = createClient()
+  return _supabase
+}
 
 export type Supply = {
   id: string
@@ -33,7 +37,7 @@ export type SupplyInput = {
 }
 
 async function fetchSupplies(): Promise<Supply[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('supplies')
     .select('*')
     .order('created_at', { ascending: false })
@@ -43,10 +47,10 @@ async function fetchSupplies(): Promise<Supply[]> {
 }
 
 async function createSupply(input: SupplyInput) {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await getClient().auth.getUser()
   if (!user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('supplies')
     .insert([{ ...input, vet_id: user.id }])
     .select('*')
@@ -57,7 +61,7 @@ async function createSupply(input: SupplyInput) {
 }
 
 async function updateSupply(id: string, input: Partial<SupplyInput>) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('supplies')
     .update(input)
     .eq('id', id)
@@ -69,7 +73,7 @@ async function updateSupply(id: string, input: Partial<SupplyInput>) {
 }
 
 async function deleteSupply(id: string) {
-  const { error } = await supabase
+  const { error } = await getClient()
     .from('supplies')
     .delete()
     .eq('id', id)

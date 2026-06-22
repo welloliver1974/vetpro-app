@@ -6,7 +6,11 @@ import { toast } from 'sonner'
 import type { z } from 'zod'
 import type { monthlyGoalSchema } from '@/lib/validations'
 
-const supabase = createClient()
+let _supabase: ReturnType<typeof createClient> | null = null
+function getClient() {
+  if (!_supabase) _supabase = createClient()
+  return _supabase
+}
 
 export type MonthlyGoal = {
   id: string
@@ -20,7 +24,7 @@ export type MonthlyGoal = {
 export type MonthlyGoalInput = z.infer<typeof monthlyGoalSchema>
 
 async function fetchMonthlyGoals(): Promise<MonthlyGoal[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('monthly_goals')
     .select('*')
     .order('ano', { ascending: false })
@@ -31,10 +35,10 @@ async function fetchMonthlyGoals(): Promise<MonthlyGoal[]> {
 }
 
 async function upsertMonthlyGoal(input: MonthlyGoalInput) {
-  const { data: user } = await supabase.auth.getUser()
+  const { data: user } = await getClient().auth.getUser()
   if (!user.user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('monthly_goals')
     .upsert({
       vet_id: user.user.id,
@@ -53,7 +57,7 @@ async function upsertMonthlyGoal(input: MonthlyGoalInput) {
 }
 
 async function deleteMonthlyGoal(id: string) {
-  const { error } = await supabase
+  const { error } = await getClient()
     .from('monthly_goals')
     .delete()
     .eq('id', id)

@@ -4,7 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-const supabase = createClient()
+let _supabase: ReturnType<typeof createClient> | null = null
+function getClient() {
+  if (!_supabase) _supabase = createClient()
+  return _supabase
+}
 
 export type PrescriptionItem = {
   medicamento: string
@@ -32,7 +36,7 @@ export type PrescriptionInput = {
 }
 
 async function fetchPrescriptions(): Promise<Prescription[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('prescriptions')
     .select('id, vet_id, patient_id, items, observacoes, created_at, patients(nome, especie, raca)')
     .order('created_at', { ascending: false })
@@ -42,10 +46,10 @@ async function fetchPrescriptions(): Promise<Prescription[]> {
 }
 
 async function createPrescription(input: PrescriptionInput) {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await getClient().auth.getUser()
   if (!user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('prescriptions')
     .insert([{ ...input, vet_id: user.id }])
     .select('id, vet_id, patient_id, items, observacoes, created_at, patients(nome, especie, raca)')
@@ -56,7 +60,7 @@ async function createPrescription(input: PrescriptionInput) {
 }
 
 async function updatePrescription(id: string, input: Partial<PrescriptionInput>) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('prescriptions')
     .update(input)
     .eq('id', id)
@@ -68,7 +72,7 @@ async function updatePrescription(id: string, input: Partial<PrescriptionInput>)
 }
 
 async function deletePrescription(id: string) {
-  const { error } = await supabase
+  const { error } = await getClient()
     .from('prescriptions')
     .delete()
     .eq('id', id)

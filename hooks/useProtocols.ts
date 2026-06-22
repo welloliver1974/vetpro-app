@@ -4,7 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-const supabase = createClient()
+let _supabase: ReturnType<typeof createClient> | null = null
+function getClient() {
+  if (!_supabase) _supabase = createClient()
+  return _supabase
+}
 
 export type Protocol = {
   id: string
@@ -24,7 +28,7 @@ export type ProtocolInput = {
 }
 
 async function fetchProtocols(): Promise<Protocol[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('protocols')
     .select('id, equipamento_id, nome, descricao, configuracoes_padrao, created_at, equipments(nome, modelo)')
     .order('created_at', { ascending: false })
@@ -34,10 +38,10 @@ async function fetchProtocols(): Promise<Protocol[]> {
 }
 
 async function createProtocol(input: ProtocolInput) {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await getClient().auth.getUser()
   if (!user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('protocols')
     .insert([{ ...input, vet_id: user.id }])
     .select('id, equipamento_id, nome, descricao, configuracoes_padrao, created_at, equipments(nome, modelo)')
@@ -48,7 +52,7 @@ async function createProtocol(input: ProtocolInput) {
 }
 
 async function updateProtocol(id: string, input: Partial<ProtocolInput>) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('protocols')
     .update(input)
     .eq('id', id)
@@ -60,7 +64,7 @@ async function updateProtocol(id: string, input: Partial<ProtocolInput>) {
 }
 
 async function deleteProtocol(id: string) {
-  const { error } = await supabase
+  const { error } = await getClient()
     .from('protocols')
     .delete()
     .eq('id', id)

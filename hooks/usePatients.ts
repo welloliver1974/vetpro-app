@@ -4,7 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-const supabase = createClient()
+let _supabase: ReturnType<typeof createClient> | null = null
+function getClient() {
+  if (!_supabase) _supabase = createClient()
+  return _supabase
+}
 
 export type Patient = {
   id: string
@@ -55,7 +59,7 @@ export type PatientInput = {
 const patientSelect = 'id, nome, especie, raca, tutor_nome, tutor_contato, endereco, data_nascimento, sexo, peso, cor_pelagem, microchip, queixa_principal, historico_doenca_atual, doencas_preexistentes, medicamentos_continuos, historico_cirurgico, alergias, vacinacao, observacoes, created_at'
 
 async function fetchPatients(): Promise<Patient[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('patients')
     .select(patientSelect)
     .order('created_at', { ascending: false })
@@ -65,10 +69,10 @@ async function fetchPatients(): Promise<Patient[]> {
 }
 
 async function createPatient(input: PatientInput) {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await getClient().auth.getUser()
   if (!user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('patients')
     .insert([{ ...input, vet_id: user.id }])
     .select(patientSelect)
@@ -79,7 +83,7 @@ async function createPatient(input: PatientInput) {
 }
 
 async function updatePatient(id: string, input: Partial<PatientInput>) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('patients')
     .update(input)
     .eq('id', id)
@@ -91,7 +95,7 @@ async function updatePatient(id: string, input: Partial<PatientInput>) {
 }
 
 async function deletePatient(id: string) {
-  const { error } = await supabase
+  const { error } = await getClient()
     .from('patients')
     .delete()
     .eq('id', id)

@@ -4,7 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-const supabase = createClient()
+let _supabase: ReturnType<typeof createClient> | null = null
+function getClient() {
+  if (!_supabase) _supabase = createClient()
+  return _supabase
+}
 
 export type Appointment = {
   id: string
@@ -28,7 +32,7 @@ export type AppointmentInput = {
 }
 
 async function fetchAppointments(): Promise<Appointment[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('appointments')
     .select('id, paciente_id, data, tipo, status, valor, forma_pagamento, assinatura_url, created_at, patients(nome, especie, endereco)')
     .order('data', { ascending: true })
@@ -38,10 +42,10 @@ async function fetchAppointments(): Promise<Appointment[]> {
 }
 
 async function createAppointment(input: AppointmentInput) {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await getClient().auth.getUser()
   if (!user) throw new Error('Usuário não autenticado')
 
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('appointments')
     .insert([{ ...input, vet_id: user.id }])
     .select('id, paciente_id, data, tipo, status, valor, forma_pagamento, assinatura_url, created_at, patients(nome, especie, endereco)')
@@ -52,7 +56,7 @@ async function createAppointment(input: AppointmentInput) {
 }
 
 async function updateAppointment(id: string, updates: Partial<Appointment>) {
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('appointments')
     .update(updates)
     .eq('id', id)
@@ -64,7 +68,7 @@ async function updateAppointment(id: string, updates: Partial<Appointment>) {
 }
 
 async function deleteAppointment(id: string) {
-  const { error } = await supabase
+  const { error } = await getClient()
     .from('appointments')
     .delete()
     .eq('id', id)
