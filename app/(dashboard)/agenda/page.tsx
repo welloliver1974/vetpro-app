@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale'
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, type Appointment } from '@/hooks/useAppointments'
 import { usePatients } from '@/hooks/usePatients'
 import { useNotifications } from '@/hooks/useNotifications'
+import { useChat } from '@/hooks/useAi'
 import { SignaturePad } from '@/components/vet/SignaturePad'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -22,8 +23,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { EmptyState } from '@/components/EmptyState'
+import { toast } from 'sonner'
 import {
-  ChevronLeft, ChevronRight, MapPin, ExternalLink, Loader2, Trash2, CheckCircle2, Filter, Bell, BellOff, CalendarDays, PawPrint,
+  ChevronLeft, ChevronRight, MapPin, ExternalLink, Loader2, Trash2, CheckCircle2, Filter, Bell, BellOff, CalendarDays, PawPrint, Sparkles,
 } from 'lucide-react'
 
 const typeColors: Record<string, string> = {
@@ -66,6 +68,9 @@ export default function AgendaPage() {
   const [finishPayment, setFinishPayment] = useState('')
   const [assinaturaUrl, setAssinaturaUrl] = useState('')
   const [assinaturaDataUrl, setAssinaturaDataUrl] = useState('')
+  const [suggestingPrice, setSuggestingPrice] = useState(false)
+
+  const chatAi = useChat()
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -115,6 +120,51 @@ export default function AgendaPage() {
     )
 
     setCreateOpen(false)
+  }
+
+  async function handleSuggestPrice() {
+    if (!finishingApp) return
+    setSuggestingPrice(true)
+
+    try {
+      const sameTypeCompleted = (appointments || [])
+        .filter((a) => a.tipo === finishingApp.tipo && a.status === 'concluido' && a.valor != null && a.valor > 0)
+
+      let avgPrice = 0
+      if (sameTypeCompleted.length > 0) {
+        avgPrice = sameTypeCompleted.reduce((sum, a) => sum + Number(a.valor), 0) / sameTypeCompleted.length
+      }
+
+      const tipoLabel = finishingApp.tipo === 'fisio' ? 'Fisioterapia' : finishingApp.tipo === 'externo' ? 'Externo (Domiciliar)' : 'Clínico'
+      const especie = finishingApp.patients?.especie || 'não informada'
+      const pacienteNome = finishingApp.patients?.nome || 'paciente'
+
+      const prompt = `Sugira um preço justo para um atendimento veterinário no Brasil.
+
+Dados do atendimento:
+- Tipo: ${tipoLabel}
+- Espécie do animal: ${especie}
+- Paciente: ${pacienteNome}
+${avgPrice > 0 ? `- Preço médio histórico para este tipo: R$ ${avgPrice.toFixed(2)}` : '- Sem histórico de preços para este tipo'}
+
+Responda APENAS com o valor numérico em reais (R$), sem formatação, sem "R$", sem vírgula, sem explicações. Use ponto como separador decimal. Exemplo: 150.00`
+
+      const suggestion = await chatAi.generate(prompt, 'Você é um assistente de precificação para clínicas veterinárias brasileiras. Responda apenas com o número do valor sugerido.')
+
+      const cleaned = suggestion.replace(/[^0-9.,]/g, '').replace(',', '.')
+      const price = parseFloat(cleaned)
+      if (!isNaN(price) && price > 0) {
+        setFinishValor(price.toFixed(2))
+        toast.success(`Preço sugerido: R$ ${price.toFixed(2)}`)
+      } else {
+        toast.error('Não foi possível interpretar o valor sugerido pela IA.')
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao sugerir preço'
+      toast.error(msg)
+    } finally {
+      setSuggestingPrice(false)
+    }
   }
 
   async function handleConfirmFinish() {
@@ -456,10 +506,24 @@ export default function AgendaPage() {
 
               <div className="space-y-2">
                 <Label className="text-foreground">Valor Cobrado (R$)</Label>
-                <Input type="number" step="0.01" value={finishValor}
-                  onChange={(e) => setFinishValor(e.target.value)}
-                  placeholder="0,00"
-                  className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground text-lg font-bold" />
+                <div className="flex gap-2">
+                  <Input type="number" step="0.01" value={finishValor}
+                    onChange={(e) => setFinishValor(e.target.value)}
+                    placeholder="0,00"
+                    className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground text-lg font-bold flex-1" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSuggestPrice}
+                    disabled={suggestingPrice}
+                    className="border-border text-muted-foreground hover:text-primary shrink-0 gap-1"
+                    title="Sugerir preço com IA"
+                  >
+                    {suggestingPrice ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Sugerir
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">

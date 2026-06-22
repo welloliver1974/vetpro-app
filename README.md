@@ -1,6 +1,6 @@
 # VetPro App 🐾
 
-> **Última sessão (22/06):** Corrigimos o build que quebrava no VPS/CI sem `.env.local` — causa raiz era o Turbopack inlinhar `createBrowserClient()` no module load. Solução: dynamic import do `@supabase/ssr` dentro de `getModule()` em `lib/supabase/client.ts`. Build verificado com e sem env vars (0 erros). Detalhes no [Checkpoint 22/06](#checkpoint-da-sessão-22062026). Próximos passos sugeridos no [Roadmap](#-roadmap--melhorias-pendentes) e no final do checkpoint.
+> **Última sessão (22/06):** Implementamos o item #13 do roadmap — Sugestão de Preço (IA). Botão "Sugerir" no modal de finalizar atendimento que usa `useChat()` para sugerir preço baseado em tipo, espécie e histórico médio. Build + lint + 77 testes — 0 erros. Detalhes no [Checkpoint 22/06](#checkpoint-da-sessão-22062026). Próximos passos sugeridos no [Roadmap](#-roadmap--melhorias-pendentes) e no final do checkpoint.
 
 SaaS de gestão veterinária focado em **fisioterapia e atendimento domiciliar**.  
 Funciona em notebook, tablet e celular.
@@ -162,7 +162,7 @@ Funciona em notebook, tablet e celular.
 | ~~10~~ | ~~Financeiro: metas mensais de faturamento~~ — ✅ | 💡 Funcionalidades |
 | ~~11~~ | ~~Revisar bundle com `next/bundle-analyzer`~~ — ✅ | 🚀 Performance |
 | ~~12~~ | ~~CI/CD no GitHub Actions (build + lint + testes)~~ — ✅ | 🧪 Qualidade |
-| 13 | Sugestão de Preço (IA) | 🤖 IA |
+| ~~13~~ | ~~Sugestão de Preço (IA)~~ — ✅ | 🤖 IA |
 | 14 | Relatório Semanal Automático (IA + cron) | 🤖 IA |
 | 15 | Backup: exportar/importar dados (JSON) | 💡 Funcionalidades |
 | 16 | Auditoria: log de alterações em registros | 💡 Funcionalidades |
@@ -796,9 +796,16 @@ O comando é **"continua"** — com isso, ler este checkpoint e seguir os próxi
 - `npm run build` **com `.env.local`** — 0 erros
 - Commit: `8c4ee56`
 
+### 🎯 Sugestão de Preço com IA (Item #13)
+- Adicionado botão "Sugerir" (ícone Sparkles) ao lado do input "Valor Cobrado (R$)" no modal de finalizar atendimento
+- Ao clicar, a IA recebe: tipo de atendimento, espécie do paciente e preço médio histórico do mesmo tipo
+- Resposta da IA é parseada e preenche automaticamente o campo de valor
+- Tratamento de erro com toast caso a IA não esteja configurada ou retorne valor inválido
+- Segue o mesmo padrão dos demais hooks de IA (`useChat`) usados no app
+
 ### Próximos passos / Como retomar
 1. Build está estável com e sem env vars — o deploy na VPS (Oracle) deve funcionar automaticamente via GitHub Actions
-2. O roadmap tem itens pendentes: #13 Sugestão de Preço (IA), #14 Relatório Semanal Automático, #15 Backup JSON, #16 Auditoria, #17 Testes e2e, #19 Timeline visual, #20 Agendamento recorrente, #21 Notificações WhatsApp, #22 Relatório automático
+2. O roadmap tem itens pendentes: #14 Relatório Semanal Automático, #15 Backup JSON, #16 Auditoria, #17 Testes e2e, #19 Timeline visual, #20 Agendamento recorrente, #21 Notificações WhatsApp, #22 Relatório automático
 3. Para continuar: `npm run dev`, escolher um item do roadmap, implementar, rodar `npm run build` e `npx vitest run` antes de commitar
 
 (End of file - total 769 lines)
