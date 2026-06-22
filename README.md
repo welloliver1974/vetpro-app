@@ -646,3 +646,90 @@ npm run lint     # 0 erros
 - `npm run build` — 0 erros
 - `npx vitest run` — 77/77 testes passando
 - Roadmap item #12 ✅
+
+### 🔧 Fix Deploy 21/06/2026 (Noite)
+- O `appleboy/ssh-action` com `envs:` não passava as GitHub Secrets corretamente, resultando em `.env.local` sobrescrito com valores vazios e build quebrado no VPS.
+- Removemos o `envs:` e os `echo` do `.env.local` do `deploy.yml`. O `.env.local` **nunca mais é sobrescrito** pelo deploy.
+- Agora o script de deploy apenas executa: `git pull`, `npm ci`, `npm run build`, `pm2 restart`.
+- Pré-requisito: o `.env.local` deve existir permanentemente no VPS em `/home/ubuntu/vetpro-app/.env.local`.
+- Roadmap item #12 — ✅ Deploy automático corrigido e estável.
+
+---
+
+## Checkpoint da Sessão 21/06/2026 (Noite - Parte 11)
+
+### Problemas Encontrados e Soluções
+
+**1. CI/CD - Workflows duplicados/corrompidos**
+- O `.github/workflows/deploy.yml` ficou com linhas duplicadas após vários edits
+- Corrigido: rewrite completo do arquivo com indentação correta
+- Formato correto do `appleboy/ssh-action`:
+  ```yaml
+  - name: Deploy to VPS
+    uses: appleboy/ssh-action@v1
+    with:
+      host: ${{ secrets.VPS_HOST }}
+      username: ${{ secrets.VPS_USER }}
+      key: ${{ secrets.VPS_SSH_KEY }}
+      envs: NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY
+    script: |
+      cd /home/ubuntu/vetpro-app
+      echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" > .env.local
+      echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY" >> .env.local
+      git pull origin master
+      npm ci --legacy-peer-deps
+      npm run build
+      PORT=4004 pm2 restart vetpro --update-env || PORT=4004 pm2 start npm --name vetpro -- start
+  ```
+
+**2. GitHub Secrets não são passados para o script SSH**
+- O `envs` no `with:` passa as variáveis, mas o script precisa usar `$VARIAVEL` diretamente
+- O `.env.local` no VPS estava sendo sobrescrito com valores vazios (secrets null)
+- **Solução**: Garantir que os secrets `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` estão configurados corretamente em `https://github.com/welloliver1974/vetpro-app/settings/secrets/actions`
+
+**3. Nginx SSL Permission Denied**
+- Erro: `cannot load certificate "/etc/letsencrypt/live/vetpro.housecloud.tec.br/fullchain.pem"`
+- **Solução**:
+  ```bash
+  sudo chmod 755 /etc/letsencrypt/live/vetpro.housecloud.tec.br
+  sudo chmod 644 /etc/letsencrypt/live/vetpro.housecloud.tec.br/fullchain.pem
+  sudo chmod 644 /etc/letsencrypt/live/vetpro.housecloud.tec.br/privkey.pem
+  sudo nginx -t && sudo systemctl reload nginx
+  ```
+
+**4. PM2 crash loop - EADDRINUSE e .next faltando**
+- App crashava com `EADDRINUSE: address already in use :::4004`
+- Ou `ENOENT: no such file or directory, open '.next/prerender-manifest.json'`
+- **Solução**:
+  ```bash
+  pm2 delete all
+  rm -rf .next
+  npm run build
+  PORT=4004 pm2 start npm --name vetpro -- start
+  pm2 save
+  ```
+
+**5. Erro recorrente de API Key inválida após deploy**
+- O build passava localmente mas no deploy falhava na página `/configuracoes/clinica`
+- Causa: O deploy sobrescrevia `.env.local` com secrets vazios/nulos
+- **Solução**: Verificar GitHub Secrets, OU colocar `.env.local` no `.gitignore` e não sobrescrever no deploy, OU criar o `.env.local` manualmente no VPS com as credenciais corretas
+
+**Procedimento de deploy manual (quando automático falhar):**
+```bash
+cd /home/ubuntu/vetpro-app
+pm2 delete all
+rm -rf .next
+echo "NEXT_PUBLIC_SUPABASE_URL=https://rhugpobguitqlrfiusmh.supabase.co" > .env.local
+echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_I_049gIVqRFwwqka2khkVQ_0ZLPW42-" >> .env.local
+npm run build
+PORT=4004 pm2 start npm --name vetpro -- start
+pm2 save
+```
+
+### Checklist Pré-Deploy
+- [ ] GitHub Secrets configurados: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- [ ] VPS: arquivo `.env.local` com credenciais válidas
+- [ ] VPS: Nginx rodando e com SSL ok
+- [ ] VPS: PM2 não está em crash loop
+
+(End of file - total 730 lines)
