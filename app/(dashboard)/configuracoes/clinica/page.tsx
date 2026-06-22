@@ -11,8 +11,9 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Loader2, Building2, Copy, Check, Users, Mail } from 'lucide-react'
 
+const supabase = createClient()
+
 export default function ClinicaPage() {
-  const supabase = createClient()
   const { data: clinic, isLoading } = useMyClinic()
   const [nome, setNome] = useState('')
   const [endereco, setEndereco] = useState('')
@@ -25,7 +26,7 @@ export default function ClinicaPage() {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null)
     })
-  }, [supabase])
+  }, [])
 
   const canManageInvites = Boolean(clinic && userId && clinic.owner_id === userId)
   const { data: invites } = useClinicInvites(canManageInvites)
