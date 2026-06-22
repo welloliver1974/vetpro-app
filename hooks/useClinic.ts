@@ -4,7 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
-const supabase = createClient()
+let _supabase: ReturnType<typeof createClient> | null = null
+function getClient() {
+  if (!_supabase) _supabase = createClient()
+  return _supabase
+}
 
 export type Clinic = {
   id: string
@@ -31,6 +35,7 @@ export type Profile = {
 }
 
 async function fetchMyClinic(): Promise<Clinic | null> {
+  const supabase = getClient()
   const { data: profile } = await supabase
     .from('profiles')
     .select('clinic_id')
@@ -50,6 +55,7 @@ async function fetchMyClinic(): Promise<Clinic | null> {
 }
 
 async function fetchInvites(): Promise<ClinicInvite[]> {
+  const supabase = getClient()
   const { data, error } = await supabase
     .from('clinic_invites')
     .select('id, clinic_id, email, token, usado, created_at')
@@ -60,6 +66,7 @@ async function fetchInvites(): Promise<ClinicInvite[]> {
 }
 
 async function fetchClinicMembers(): Promise<Profile[]> {
+  const supabase = getClient()
   const { data: profile } = await supabase
     .from('profiles')
     .select('clinic_id')
@@ -78,6 +85,7 @@ async function fetchClinicMembers(): Promise<Profile[]> {
 }
 
 async function createClinic(input: { nome: string; endereco?: string; telefone?: string }) {
+  const supabase = getClient()
   const user = (await supabase.auth.getUser()).data.user
   if (!user) throw new Error('Não autenticado')
 
@@ -100,6 +108,7 @@ async function createClinic(input: { nome: string; endereco?: string; telefone?:
 }
 
 async function createInvite(email: string) {
+  const supabase = getClient()
   const { data: profile } = await supabase
     .from('profiles')
     .select('clinic_id, id')
@@ -120,6 +129,7 @@ async function createInvite(email: string) {
 }
 
 async function acceptInvite(token: string) {
+  const supabase = getClient()
   const { data: invite, error: findError } = await supabase
     .from('clinic_invites')
     .select('id, clinic_id, email, token, usado, created_at')
