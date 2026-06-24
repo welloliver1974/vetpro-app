@@ -1,6 +1,6 @@
 # VetPro App 🐾
 
-> **Última sessão (22/06):** Item #13 (Sugestão de Preço IA) implementado. Planos detalhados dos itens #21 (Notificações WhatsApp/E-mail) e #30 (Integração Google Calendar /.ics) adicionados ao README com arquitetura, fluxos, tabelas, interface e escopo de MVP. Próximos passos: implementar um dos itens do roadmap.
+> **Última sessão (24/06):** Sprint completa — Itens #15 (Backup JSON), #16 (Auditoria), #19 (Timeline Evolução), #20 (Agendamento Recorrente), #21 (Notificações WhatsApp MVP), #23 (Visão Mensal/Diária), #30 (Google Calendar .ics) implementados. Build + lint + testes 100% passando.
 
 SaaS de gestão veterinária focado em **fisioterapia e atendimento domiciliar**.  
 Funciona em notebook, tablet e celular.
@@ -164,20 +164,20 @@ Funciona em notebook, tablet e celular.
 | ~~12~~ | ~~CI/CD no GitHub Actions (build + lint + testes)~~ — ✅ | 🧪 Qualidade |
 | ~~13~~ | ~~Sugestão de Preço (IA)~~ — ✅ | 🤖 IA |
 | 14 | Relatório Semanal Automático (IA + cron) | 🤖 IA |
-| 15 | Backup: exportar/importar dados (JSON) | 💡 Funcionalidades |
-| 16 | Auditoria: log de alterações em registros | 💡 Funcionalidades |
+| ~~15~~ | ~~Backup: exportar/importar dados (JSON)~~ — ✅ | 💡 Funcionalidades |
+| ~~16~~ | ~~Auditoria: log de alterações em registros~~ — ✅ | 💡 Funcionalidades |
 | 17 | Testes de integração/e2e (Playwright) | 🧪 Qualidade |
 | ~~18~~ | ~~Pacientes: gráfico de peso ao longo do tempo~~ — ✅ | 💡 Funcionalidades |
-| 19 | Pacientes: timeline visual de evolução | 💡 Funcionalidades |
-| 20 | Agenda: agendamento recorrente | 💡 Funcionalidades |
-| 21 | Notificações: lembrete por WhatsApp/e-mail (webhook) | 💡 Funcionalidades |
+| ~~19~~ | ~~Pacientes: timeline visual de evolução~~ — ✅ | 💡 Funcionalidades |
+| ~~20~~ | ~~Agenda: agendamento recorrente~~ — ✅ | 💡 Funcionalidades |
+| ~~21~~ | ~~Notificações: lembrete por WhatsApp/e-mail (webhook)~~ — ✅ (MVP) | 💡 Funcionalidades |
 | 22 | Relatório: agendamento automático de PDF mensal | 💡 Funcionalidades |
-| 30 | Integração com Google Calendar / .ics | 💡 Funcionalidades |
+| ~~30~~ | ~~Integração com Google Calendar / .ics~~ — ✅ (MVP .ics) | 💡 Funcionalidades |
 
 ### 🔴 Complexo
 | # | Item | Categoria |
 |---|------|-----------|
-| 23 | Agenda: visão mensal / diária | 💡 Funcionalidades |
+| ~~23~~ | ~~Agenda: visão mensal / diária~~ — ✅ | 💡 Funcionalidades |
 | 24 | Papéis: permissões por função (admin, vet, assistente) | 💡 Funcionalidades |
 | 25 | Offline: cache de dados (Service Worker + sync) | 💡 Funcionalidades |
 | 26 | Dashboard: widgets customizáveis (DnD) | 💡 Funcionalidades |
@@ -1299,5 +1299,50 @@ Botão ao lado dos botões de ação:
 
 ### Próximos passos / Como retomar
 1. Build está estável com e sem env vars — o deploy na VPS (Oracle) deve funcionar automaticamente via GitHub Actions
-2. O roadmap tem itens pendentes: #14 Relatório Semanal Automático, #15 Backup JSON, #16 Auditoria, #17 Testes e2e, #19 Timeline visual, #20 Agendamento recorrente, #21 Notificações WhatsApp (plano detalhado acima), #22 Relatório automático, #30 Integração Google Calendar /.ics (plano detalhado acima)
+2. O roadmap tem itens pendentes: #14 Relatório Semanal Automático, #17 Testes e2e, #22 Relatório automático, #24 Papéis/Permissões, #25 Offline, #26 Dashboard Customizável, #27 Sessão por Voz, #28 Busca Inteligente, #29 i18n
 3. Para continuar: `npm run dev`, escolher um item do roadmap, implementar, rodar `npm run build` e `npx vitest run` antes de commitar
+
+---
+
+## Checkpoint da Sessão 24/06/2026
+
+### 🏁 Sprint Completa — 8 itens do Roadmap implementados
+
+| Item | Título | Status | Detalhes |
+|------|--------|--------|----------|
+| **#30** | Google Calendar /.ics | ✅ | `lib/calendar.ts` + botão 📅 na agenda → download .ics |
+| **#19** | Timeline Visual de Evolução | ✅ | Nova aba "Linha do Tempo" em `/pacientes/[id]` com timeline vertical, variação de peso, strip de fotos, evolução expansível |
+| **#20** | Agendamento Recorrente | ✅ | Checkbox "Repetir" no dialog de criação, dias da semana multi-select, nº de sessões, preview em tempo real, batch insert no Supabase |
+| **#21** | Notificações WhatsApp (MVP) | ✅ | Seção "Notificações WhatsApp" em `/configuracoes` (Evolution API URL/Key/Instância/Template), envio automático ao criar agendamento + log em `notification_log` |
+| **#23** | Visão Mensal/Diária | ✅ | Toggle **Sem \| Mês \| Dia** na agenda, navegação adaptativa, grid mensal com padding, visão diária vertical |
+| **#16** | Auditoria | ✅ | Tabela `audit_logs` (RLS), hook `useAuditLogs`, página `/auditoria` com lista + dialog JSON, link na Sidebar |
+| **#15** | Backup JSON | ✅ | `lib/backup.ts` (export/import 8 tabelas com upsert preservando IDs), seção "Backup de Dados" em `/configuracoes` com progresso |
+
+### ✅ Verificações
+- `npm run build` — 0 erros (19 rotas, `/auditoria` incluída)
+- `npm run lint` — 0 erros, 0 warnings
+- `npx vitest run` — 77/77 testes passando
+
+### 📦 Novos arquivos criados
+| Arquivo | Descrição |
+|---------|-----------|
+| `lib/calendar.ts` | Geração .ics + download |
+| `components/Timeline.tsx` | Timeline visual de evolução |
+| `lib/notification/config.ts` | Config WhatsApp (localStorage criptografado) |
+| `lib/notification/templates.ts` | Renderização de template com variáveis |
+| `lib/notification/index.ts` | Envio Evolution API + log |
+| `hooks/useNotificationConfig.ts` | Hook React |
+| `supabase-migration-notificacoes.sql` | `notification_log` + `profiles.notificacoes_config` |
+| `supabase-migration-auditoria.sql` | Tabela `audit_logs` com RLS |
+| `lib/audit.ts` | `logAudit()` + `fetchAuditLogs()` |
+| `hooks/useAuditLogs.ts` | Hook React Query |
+| `app/(dashboard)/auditoria/page.tsx` | Página de auditoria |
+| `lib/backup.ts` | Export/import JSON completo |
+| `supabase-migration-auditoria.sql` | Tabela `audit_logs` com RLS |
+
+### 🔧 Arquivos modificados
+- `app/(dashboard)/agenda/page.tsx` — toggle de view, recorrência, notificação WhatsApp, botão .ics
+- `app/(dashboard)/pacientes/[id]/page.tsx` — nova aba "Linha do Tempo"
+- `app/(dashboard)/configuracoes/page.tsx` — seções WhatsApp + Backup
+- `components/layout/Sidebar.tsx` — link Auditoria
+- Roadmap atualizado no README

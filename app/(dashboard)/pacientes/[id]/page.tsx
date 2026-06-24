@@ -13,6 +13,7 @@ import { useChat, useTranscription, useImageAnalysis } from '@/hooks/useAi'
 import { AudioRecorder } from '@/components/vet/AudioRecorder'
 import { ReportPDF } from '@/components/vet/ReportPDF'
 import { WeightChart } from '@/components/WeightChart'
+import { Timeline } from '@/components/Timeline'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -339,8 +340,9 @@ export default function PatientDetailPage() {
       <WeightChart sessions={sessions || []} />
 
       <Tabs defaultValue="sessoes" className="space-y-6">
-        <TabsList className="bg-card border border-border grid grid-cols-3 w-full sm:w-auto">
+        <TabsList className="bg-card border border-border grid grid-cols-2 sm:grid-cols-4 w-full sm:w-auto">
           <TabsTrigger value="sessoes" className="text-muted-foreground data-[state=active]:text-primary">Sessões</TabsTrigger>
+          <TabsTrigger value="timeline" className="text-muted-foreground data-[state=active]:text-primary">Linha do Tempo</TabsTrigger>
           <TabsTrigger value="galeria" className="text-muted-foreground data-[state=active]:text-primary">Galeria</TabsTrigger>
           <TabsTrigger value="ficha" className="text-muted-foreground data-[state=active]:text-primary">Ficha Médica</TabsTrigger>
         </TabsList>
@@ -442,6 +444,15 @@ export default function PatientDetailPage() {
               }
             />
           )}
+        </TabsContent>
+
+        {/* Timeline Tab */}
+        <TabsContent value="timeline">
+          <Timeline
+            sessions={sessions || []}
+            appointments={patientAppointments}
+            protocols={protocols || []}
+          />
         </TabsContent>
 
         {/* Galeria Tab */}

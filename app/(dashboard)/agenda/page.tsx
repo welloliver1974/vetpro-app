@@ -3,12 +3,15 @@
 import { useState, useMemo } from 'react'
 import {
   format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, parseISO, setHours, setMinutes,
+  startOfMonth, endOfMonth, endOfWeek, eachDayOfInterval, addMonths, subMonths, isSameMonth, subDays, isToday,
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, type Appointment } from '@/hooks/useAppointments'
 import { usePatients } from '@/hooks/usePatients'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useChat } from '@/hooks/useAi'
+import { generateIcsEvent, downloadIcs } from '@/lib/calendar'
 import { SignaturePad } from '@/components/vet/SignaturePad'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -25,7 +28,7 @@ import { Label } from '@/components/ui/label'
 import { EmptyState } from '@/components/EmptyState'
 import { toast } from 'sonner'
 import {
-  ChevronLeft, ChevronRight, MapPin, ExternalLink, Loader2, Trash2, CheckCircle2, Filter, Bell, BellOff, CalendarDays, PawPrint, Sparkles,
+  ChevronLeft, ChevronRight, MapPin, ExternalLink, Loader2, Trash2, CheckCircle2, Filter, Bell, BellOff, CalendarDays, PawPrint, Sparkles, Calendar,
 } from 'lucide-react'
 
 const typeColors: Record<string, string> = {
@@ -70,23 +73,49 @@ export default function AgendaPage() {
   const [assinaturaDataUrl, setAssinaturaDataUrl] = useState('')
   const [suggestingPrice, setSuggestingPrice] = useState(false)
 
+  // Recorrência
+  const [recorrenteAtivo, setRecorrenteAtivo] = useState(false)
+  const [diasSemana, setDiasSemana] = useState<number[]>([])
+  const [numOcorrencias, setNumOcorrencias] = useState(6)
+
   const chatAi = useChat()
+
+  type ViewMode = 'week' | 'month' | 'day'
+  const [viewMode, setViewMode] = useState<ViewMode>('week')
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
-  const weekAppointments = useMemo(() => {
+  const monthDays = useMemo(() => {
+    const mStart = startOfMonth(currentDate)
+    const mEnd = endOfMonth(currentDate)
+    return eachDayOfInterval({
+      start: startOfWeek(mStart, { weekStartsOn: 0 }),
+      end: endOfWeek(mEnd, { weekStartsOn: 0 }),
+    })
+  }, [currentDate])
+
+  const visibleDays = useMemo(() => {
+    if (viewMode === 'month') return monthDays
+    if (viewMode === 'day') return [currentDate]
+    return weekDays
+  }, [viewMode, weekDays, monthDays, currentDate])
+
+  const filteredAppointments = useMemo(() => {
     if (!appointments) return []
     return appointments
-      .filter((a) => weekDays.some((d) => isSameDay(parseISO(a.data), d)))
+      .filter((a) => visibleDays.some((d) => isSameDay(parseISO(a.data), d)))
       .filter((a) => !filterTipo || a.tipo === filterTipo)
       .filter((a) => !filterStatus || a.status === filterStatus)
       .filter((a) => !filterPaciente || a.patients?.nome?.toLowerCase().includes(filterPaciente.toLowerCase()))
-  }, [appointments, weekDays, filterTipo, filterStatus, filterPaciente])
+  }, [appointments, visibleDays, filterTipo, filterStatus, filterPaciente])
 
   function openCreateForDate(date: Date) {
     setSelectedDate(format(date, 'yyyy-MM-dd'))
     setForm({ paciente_id: '', tipo: 'clinico', hora: '08:00', valor: '' })
+    setRecorrenteAtivo(false)
+    setDiasSemana([date.getDay()])
+    setNumOcorrencias(6)
     setCreateOpen(true)
   }
 
@@ -99,25 +128,105 @@ export default function AgendaPage() {
     setFinishOpen(true)
   }
 
+  const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
+  function generateRecurringDates(start: Date, days: number[], count: number): Date[] {
+    const dates: Date[] = []
+    const current = new Date(start)
+    let maxIter = 365
+    while (dates.length < count && maxIter > 0) {
+      if (days.includes(current.getDay())) {
+        dates.push(new Date(current))
+      }
+      current.setDate(current.getDate() + 1)
+      maxIter--
+    }
+    return dates
+  }
+
+  const queryClient = useQueryClient()
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     const [hours, minutes] = form.hora.split(':').map(Number)
-    const date = setHours(setMinutes(parseISO(selectedDate), minutes), hours)
+    const baseDate = setHours(setMinutes(parseISO(selectedDate), minutes), hours)
+    const patientName = patients?.find((p) => p.id === form.paciente_id)?.nome || 'paciente'
+
+    if (recorrenteAtivo && diasSemana.length > 0) {
+      const datesToCreate = generateRecurringDates(baseDate, diasSemana, numOcorrencias)
+
+      const sb = await createClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+
+      const rows = datesToCreate.map((date) => ({
+        paciente_id: form.paciente_id,
+        data: date.toISOString(),
+        tipo: form.tipo,
+        vet_id: user.id,
+        valor: form.valor ? Number(form.valor) : undefined,
+      }))
+
+      const { error } = await sb.from('appointments').insert(rows)
+      if (error) throw error
+
+      queryClient.invalidateQueries({ queryKey: ['appointments'] })
+
+      for (const date of datesToCreate) {
+        const reminder = new Date(date.getTime() - 15 * 60 * 1000)
+        notif.scheduleReminder(
+          'Atendimento em breve!',
+          reminder,
+          `${patientName} - ${form.tipo === 'fisio' ? 'Fisioterapia' : form.tipo === 'externo' ? 'Externo' : 'Clínico'} às ${format(date, 'HH:mm')}`
+        )
+      }
+
+      toast.success(`${datesToCreate.length} atendimentos agendados!`)
+      setCreateOpen(false)
+      return
+    }
+
     await createAppointment.mutateAsync({
       paciente_id: form.paciente_id,
-      data: date.toISOString(),
+      data: baseDate.toISOString(),
       tipo: form.tipo,
       valor: form.valor ? Number(form.valor) : undefined,
     })
 
-    // Schedule reminder 15min before
-    const reminder = new Date(date.getTime() - 15 * 60 * 1000)
-    const patientName = patients?.find((p) => p.id === form.paciente_id)?.nome || 'paciente'
+    const reminder = new Date(baseDate.getTime() - 15 * 60 * 1000)
     notif.scheduleReminder(
       'Atendimento em breve!',
       reminder,
       `${patientName} - ${form.tipo === 'fisio' ? 'Fisioterapia' : form.tipo === 'externo' ? 'Externo' : 'Clínico'} às ${form.hora}`
     )
+
+    // Send WhatsApp notification if configured
+    const pendingPatient = patients?.find((p) => p.id === form.paciente_id)
+    if (pendingPatient?.tutor_contato) {
+      const { loadNotifyConfigAsync } = await import('@/lib/notification/config')
+      const ncfg = await loadNotifyConfigAsync()
+      if (ncfg?.enabled) {
+        const { sendAppointmentNotification } = await import('@/lib/notification')
+        const sb = await createClient()
+        const { data: { user } } = await sb.auth.getUser()
+        const { data: profile } = user ? await sb.from('profiles').select('nome').eq('id', user.id).single() : { data: null }
+        sendAppointmentNotification({
+          config: ncfg,
+          appointmentId: '',
+          tutorNome: pendingPatient.tutor_nome || '',
+          tutorContato: pendingPatient.tutor_contato,
+          pacienteNome: pendingPatient.nome,
+          especie: pendingPatient.especie || '',
+          tipo: form.tipo,
+          dataISO: baseDate.toISOString(),
+          vetNome: profile?.nome || 'Veterinário',
+          vetId: user?.id || '',
+          endereco: pendingPatient.endereco,
+        }).then((res) => {
+          if (!res.success) toast.error(`WhatsApp: ${res.error}`, { duration: 4000 })
+        })
+      }
+    }
 
     setCreateOpen(false)
   }
@@ -207,17 +316,47 @@ Responda APENAS com o valor numérico em reais (R$), sem formatação, sem "R$",
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div className="min-w-0">
           <h1 className="text-3xl font-bold tracking-tight">Agenda</h1>
-          <p className="text-sm text-muted-foreground">Visualização semanal</p>
+          <p className="text-sm text-muted-foreground">
+            Visualização {viewMode === 'week' ? 'semanal' : viewMode === 'month' ? 'mensal' : 'diária'}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <Button variant="outline" size="icon-sm" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}
+          <div className="flex gap-1 bg-muted rounded-lg p-1 mr-2">
+            {(['week', 'month', 'day'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                  viewMode === mode
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-card-foreground'
+                }`}
+              >
+                {mode === 'week' ? 'Sem' : mode === 'month' ? 'Mês' : 'Dia'}
+              </button>
+            ))}
+          </div>
+          <Button variant="outline" size="icon-sm" onClick={() => {
+            const fn = viewMode === 'month' ? subMonths : viewMode === 'day' ? subDays : subWeeks
+            const amount = viewMode === 'day' ? 1 : 1
+            setCurrentDate(fn(currentDate, amount))
+          }}
             className="border-border text-muted-foreground">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-medium text-card-foreground min-w-[140px] text-center">
-            {format(weekStart, "d 'de' MMM", { locale: ptBR })} - {format(addDays(weekStart, 6), "d 'de' MMM", { locale: ptBR })}
+            {viewMode === 'week'
+              ? `${format(weekStart, "d 'de' MMM", { locale: ptBR })} - ${format(addDays(weekStart, 6), "d 'de' MMM", { locale: ptBR })}`
+              : viewMode === 'month'
+              ? format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })
+              : format(currentDate, "d 'de' MMM", { locale: ptBR })
+            }
           </span>
-          <Button variant="outline" size="icon-sm" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}
+          <Button variant="outline" size="icon-sm" onClick={() => {
+            const fn = viewMode === 'month' ? addMonths : viewMode === 'day' ? addDays : addWeeks
+            const amount = viewMode === 'day' ? 1 : 1
+            setCurrentDate(fn(currentDate, amount))
+          }}
             className="border-border text-muted-foreground">
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -283,51 +422,120 @@ Responda APENAS com o valor numérico em reais (R$), sem formatação, sem "R$",
       </div>
 
       {/* Calendar Grid */}
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2 mb-6">
-        {weekDays.map((day) => {
-          const isToday = isSameDay(day, new Date())
-          const dayApps = appointments?.filter((a) => isSameDay(parseISO(a.data), day)) ?? []
-          return (
-            <Card
-              key={day.toISOString()}
-              className={`bg-card border-border min-h-[120px] cursor-pointer hover:border-border transition-colors ${isToday ? 'ring-1 ring-primary/50' : ''}`}
-              onClick={() => openCreateForDate(day)}
-            >
-              <CardContent className="p-2">
-                <div className="text-center mb-2">
-                  <div className="text-[10px] uppercase text-muted-foreground">
-                    {format(day, 'EEE', { locale: ptBR })}
-                  </div>
-                  <div className={`text-lg font-bold ${isToday ? 'text-primary' : 'text-card-foreground'}`}>
-                    {format(day, 'd')}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  {dayApps.slice(0, 3).map((app) => (
-                    <div
-                      key={app.id}
-                      className={`text-[10px] px-1.5 py-0.5 rounded border ${typeColors[app.tipo] || ''} truncate`}
-                    >
-                      {app.patients?.nome || '---'} ({typeLabels[app.tipo]})
-                    </div>
-                  ))}
-                  {dayApps.length > 3 && (
-                    <div className="text-[10px] text-muted-foreground text-center">
-                      +{dayApps.length - 3} mais
-                    </div>
-                  )}
-                </div>
+      {viewMode === 'day' ? (
+        <div className="space-y-3 mb-6">
+          {filteredAppointments.length === 0 ? (
+            <Card className="bg-card border-border cursor-pointer hover:border-border transition-colors" onClick={() => openCreateForDate(currentDate)}>
+              <CardContent className="p-8 text-center">
+                <p className="text-sm text-muted-foreground mb-2">Nenhum atendimento neste dia</p>
+                <Button size="sm" variant="outline" className="border-border text-foreground gap-2">
+                  <PawPrint className="h-4 w-4" /> Novo Atendimento
+                </Button>
               </CardContent>
             </Card>
-          )
-        })}
-      </div>
+          ) : (
+            filteredAppointments
+              .sort((a, b) => a.data.localeCompare(b.data))
+              .map((app) => (
+                <Card key={app.id} className={`bg-card border-l-4 ${app.status === 'concluido' ? 'border-l-border opacity-60' : app.tipo === 'fisio' ? 'border-l-emerald-500' : app.tipo === 'externo' ? 'border-l-amber-500' : 'border-l-blue-500'}`}>
+                  <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="text-lg font-bold text-primary min-w-[60px] shrink-0">
+                        {format(parseISO(app.data), 'HH:mm')}
+                      </div>
+                      <div className="min-w-0 overflow-hidden">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-card-foreground truncate">{app.patients?.nome || '---'}</span>
+                          <Badge variant="outline" className={`text-[10px] shrink-0 ${app.tipo === 'fisio' ? 'border-emerald-800 text-emerald-400' : app.tipo === 'externo' ? 'border-amber-800 text-amber-400' : 'border-blue-800 text-blue-400'}`}>
+                            {typeLabels[app.tipo]}
+                          </Badge>
+                        </div>
+                        {app.tipo === 'externo' && app.patients?.endereco && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 overflow-hidden">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(app.patients.endereco)}`} target="_blank" rel="noreferrer" className="text-primary hover:text-primary/80 flex items-center gap-0.5 truncate">
+                              {app.patients.endereco} <ExternalLink className="h-3 w-3 shrink-0" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button variant="ghost" size="icon-xs" onClick={() => { const ics = generateIcsEvent(app); downloadIcs(ics, `vetpro-${(app.patients?.nome || 'paciente').replace(/\s+/g, '-').toLowerCase()}.ics`) }} className="text-muted-foreground hover:text-primary shrink-0" title="Adicionar ao calendário">
+                        <Calendar className="h-3.5 w-3.5" />
+                      </Button>
+                      {app.status === 'agendado' && (
+                        <>
+                          <Button size="xs" onClick={() => openFinishModal(app)} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 shrink-0">
+                            <CheckCircle2 className="h-3 w-3" /> Finalizar
+                          </Button>
+                          <Button variant="ghost" size="icon-xs" onClick={() => handleDelete(app.id)} className="text-muted-foreground hover:text-red-400 shrink-0">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+          )}
+        </div>
+      ) : (
+        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2 mb-6 ${viewMode === 'month' ? 'auto-rows-fr' : ''}`}>
+          {visibleDays.map((day) => {
+            const today = isToday(day)
+            const dayApps = appointments?.filter((a) => isSameDay(parseISO(a.data), day)) ?? []
+            const isCurrentMonth = viewMode === 'month' ? isSameMonth(day, currentDate) : true
+            return (
+              <Card
+                key={day.toISOString()}
+                className={`bg-card border-border min-h-[90px] cursor-pointer hover:border-border transition-colors ${today ? 'ring-1 ring-primary/50' : ''} ${!isCurrentMonth ? 'opacity-40' : ''}`}
+                onClick={() => openCreateForDate(day)}
+              >
+                <CardContent className="p-1.5">
+                  <div className="text-center mb-1">
+                    {viewMode === 'week' && (
+                      <div className="text-[10px] uppercase text-muted-foreground">
+                        {format(day, 'EEE', { locale: ptBR })}
+                      </div>
+                    )}
+                    <div className={`text-sm font-bold ${today ? 'text-primary' : 'text-card-foreground'}`}>
+                      {format(day, 'd')}
+                    </div>
+                  </div>
+                  <div className="space-y-0.5">
+                    {dayApps.slice(0, viewMode === 'month' ? 2 : 3).map((app) => (
+                      <div
+                        key={app.id}
+                        className={`text-[10px] px-1 py-0.5 rounded border ${typeColors[app.tipo] || ''} truncate leading-tight`}
+                      >
+                        {viewMode === 'month' ? (
+                          <span>{typeLabels[app.tipo]}</span>
+                        ) : (
+                          <>{app.patients?.nome || '---'} ({typeLabels[app.tipo]})</>
+                        )}
+                      </div>
+                    ))}
+                    {dayApps.length > (viewMode === 'month' ? 2 : 3) && (
+                      <div className="text-[10px] text-muted-foreground text-center">
+                        +{dayApps.length - (viewMode === 'month' ? 2 : 3)}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
 
-      {/* Lista da Semana */}
-      {weekAppointments.length > 0 ? (
+      {/* Lista de Atendimentos */}
+      {filteredAppointments.length > 0 && viewMode !== 'day' ? (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-card-foreground">Atendimentos da Semana</h2>
-          {weekAppointments.map((app) => (
+          <h2 className="text-lg font-semibold text-card-foreground">
+            Atendimentos {viewMode === 'week' ? 'da Semana' : 'do Mês'}
+          </h2>
+          {filteredAppointments.map((app) => (
             <Card key={app.id} className={`bg-card border-l-4 ${app.status === 'concluido' ? 'border-l-border opacity-60' : app.tipo === 'fisio' ? 'border-l-emerald-500' : app.tipo === 'externo' ? 'border-l-amber-500' : 'border-l-blue-500'}`}>
               <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                      <div className="flex items-center gap-4 min-w-0">
@@ -365,8 +573,18 @@ Responda APENAS com o valor numérico em reais (R$), sem formatação, sem "R$",
                        </div>
                      </div>
 
-                     <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
-                       {app.status === 'agendado' && (
+                      <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
+                        <Button variant="ghost" size="icon-xs"
+                          onClick={() => {
+                            const ics = generateIcsEvent(app)
+                            const patientName = app.patients?.nome || 'paciente'
+                            downloadIcs(ics, `vetpro-${patientName.replace(/\s+/g, '-').toLowerCase()}.ics`)
+                          }}
+                          className="text-muted-foreground hover:text-primary shrink-0"
+                          title="Adicionar ao calendário">
+                          <Calendar className="h-3.5 w-3.5" />
+                        </Button>
+                        {app.status === 'agendado' && (
                          <>
                            <Button size="xs" onClick={() => openFinishModal(app)}
                              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 shrink-0">
@@ -394,10 +612,10 @@ Responda APENAS com o valor numérico em reais (R$), sem formatação, sem "R$",
             </Card>
           ))}
         </div>
-      ) : !isLoading && (
+      ) : !isLoading && viewMode !== 'day' && (
         <EmptyState
           icon={CalendarDays}
-          title="Nenhum atendimento nesta semana"
+          title={viewMode === 'week' ? 'Nenhum atendimento nesta semana' : 'Nenhum atendimento neste mês'}
           description="Crie um novo atendimento tocando em um dia do calendário acima."
           action={(
             <Button onClick={() => openCreateForDate(new Date())} className="bg-primary hover:bg-primary/90 text-white gap-2">
@@ -462,6 +680,70 @@ Responda APENAS com o valor numérico em reais (R$), sem formatação, sem "R$",
               <Input type="number" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })}
                 className="bg-muted border-border text-card-foreground" />
             </div>
+
+            <div className="space-y-3 pt-2 border-t border-border">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={recorrenteAtivo}
+                  onChange={(e) => setRecorrenteAtivo(e.target.checked)}
+                  className="rounded border-border accent-primary"
+                />
+                <span className="text-sm text-foreground font-medium">Repetir agendamento</span>
+              </label>
+
+              {recorrenteAtivo && (
+                <div className="space-y-3 pl-6">
+                  <div>
+                    <Label className="text-foreground text-xs">Dias da semana</Label>
+                    <div className="flex gap-1 mt-1.5">
+                      {dayNames.map((name, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setDiasSemana((prev) =>
+                            prev.includes(idx) ? prev.filter((d) => d !== idx) : [...prev, idx]
+                          )}
+                          className={`w-8 h-8 rounded-full text-xs font-medium transition-colors ${
+                            diasSemana.includes(idx)
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-muted-foreground hover:bg-accent'
+                          }`}
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label className="text-foreground text-xs shrink-0">Nº de sessões:</Label>
+                    <Input
+                      type="number"
+                      min={2}
+                      max={30}
+                      value={numOcorrencias}
+                      onChange={(e) => setNumOcorrencias(Math.max(2, Math.min(30, Number(e.target.value))))}
+                      className="w-20 h-8 text-sm"
+                    />
+                  </div>
+
+                  {diasSemana.length > 0 && (() => {
+                    const [h, m] = form.hora.split(':').map(Number)
+                    const d = setHours(setMinutes(parseISO(selectedDate), m), h)
+                    const dates = generateRecurringDates(d, diasSemana, numOcorrencias)
+                    const list = dates.slice(0, 5).map((dt) => format(dt, "dd/MM (EEE)", { locale: ptBR }))
+                    return (
+                      <p className="text-xs text-muted-foreground">
+                        Serão criados <strong>{dates.length}</strong> agendamentos:
+                        {' '}{list.join(', ')}{dates.length > 5 && ` e +${dates.length - 5}`}
+                      </p>
+                    )
+                  })()}
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end gap-3 pt-2">
               <DialogClose asChild>
                 <Button type="button" variant="outline" className="border-border text-foreground">Cancelar</Button>
