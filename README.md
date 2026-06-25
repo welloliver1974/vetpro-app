@@ -1383,3 +1383,17 @@ Botão ao lado dos botões de ação:
 - `npm run lint` — 0 erros, 0 warnings
 - `npm run build` — 0 erros (19 rotas)
 - `npx vitest run` — 77/77 testes passando
+
+---
+
+## 📋 Próximo: Item #14 — Relatório Semanal Automático (IA + cron)
+
+### Abordagem: MVP client-side (sem mudança de infra)
+
+| Passo | Arquivo | Descrição |
+|-------|---------|-----------|
+| 1 | `lib/ai/weeklyReport.ts` | Função que monta prompt com dados da semana (atendimentos, faturamento, sessões por tipo, pacientes, evoluções) e chama `chat()` da IA |
+| 2 | `hooks/useWeeklyReport.ts` | Hook que carrega config, verifica se relatório está devido (dia + hora + semana diferente), gera via IA, envia WhatsApp, registra `lastSentWeek` |
+| 3 | `app/(dashboard)/configuracoes/page.tsx` | Nova seção "Relatório Semanal": toggle, dia da semana, hora, número WhatsApp destino |
+| 4 | Integração | Verificar ao carregar o Dashboard ou via `setInterval` |
+| 5 | Marcar #14 concluído no roadmap |
