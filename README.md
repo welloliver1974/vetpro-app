@@ -1,6 +1,6 @@
 # VetPro App 🐾
 
-> **Última sessão (24/06):** Sprint completa — Itens #15 (Backup JSON), #16 (Auditoria), #19 (Timeline Evolução), #20 (Agendamento Recorrente), #21 (Notificações WhatsApp MVP), #23 (Visão Mensal/Diária), #30 (Google Calendar .ics) implementados. Build + lint + testes 100% passando.
+> **Última sessão (25/06):** Itens #26 (Dashboard DnD), #25 (Offline MVP) e #27 (Sessão por Voz Completa) implementados. Build + lint + testes 100% passando.
 
 SaaS de gestão veterinária focado em **fisioterapia e atendimento domiciliar**.  
 Funciona em notebook, tablet e celular.
@@ -179,9 +179,9 @@ Funciona em notebook, tablet e celular.
 |---|------|-----------|
 | ~~23~~ | ~~Agenda: visão mensal / diária~~ — ✅ | 💡 Funcionalidades |
 | 24 | Papéis: permissões por função (admin, vet, assistente) | 💡 Funcionalidades |
-| 25 | Offline: cache de dados (Service Worker + sync) | 💡 Funcionalidades |
-| 26 | Dashboard: widgets customizáveis (DnD) | 💡 Funcionalidades |
-| 27 | Sessão por Voz Completa (IA) | 🤖 IA |
+| ~~25~~ | ~~Offline: cache de dados (Service Worker + sync)~~ — ✅ (MVP) | 💡 Funcionalidades |
+| ~~26~~ | ~~Dashboard: widgets customizáveis (DnD)~~ — ✅ | 💡 Funcionalidades |
+| ~~27~~ | ~~Sessão por Voz Completa (IA)~~ — ✅ | 🤖 IA |
 | 28 | Busca Inteligente (pgvector + embeddings) | 🤖 IA |
 | 29 | Internacionalização (i18n) | 💡 Funcionalidades |
 
@@ -1346,3 +1346,40 @@ Botão ao lado dos botões de ação:
 - `app/(dashboard)/configuracoes/page.tsx` — seções WhatsApp + Backup
 - `components/layout/Sidebar.tsx` — link Auditoria
 - Roadmap atualizado no README
+
+---
+
+## Checkpoint da Sessão 25/06/2026
+
+### 🧩 Dashboard Customizável com Drag & Drop (Item #26)
+- Instalado `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+- Criado `hooks/useDashboardLayout.ts` — gerencia ordem, visibilidade e persistência no localStorage (`vetpro-dashboard-layout`)
+- Criado `components/dashboard/WidgetWrapper.tsx` — wrapper DnD com `useSortable` (ícone de arrastar `⠿`, botão ocultar `✕`)
+- Extraídos 6 widgets em `components/dashboard/widgets.tsx`: Summary, PaymentMethods (Pizza), Sessions (Barras), Revenue (Linha), Insight IA, AgendaToday
+- Refatorado `app/(dashboard)/page.tsx`: DndContext + SortableContext + grid sortável
+- Botão "Personalizar" no topo ativa modo edição com drag handles + botões de ocultar
+- Widgets ocultos aparecem em banner "Widgets ocultos" com botão `+` para reexibir
+- Botão "Restaurar" volta ao layout padrão
+
+### 📡 Offline MVP (Item #25)
+- Instalado `@tanstack/react-query-persist-client` + `idb-keyval`
+- Criado `lib/offlinePersister.ts` — persiste o cache do React Query no IndexedDB (7 dias de retenção)
+- Atualizado `providers/QueryProvider.tsx`: substituído `QueryClientProvider` por `PersistQueryClientProvider` + `onlineManager` integrado
+- Mutations configuradas com `networkMode: 'offlineFirst'` — pausam quando offline e retomam automaticamente quando online
+- Criado `components/OfflineBanner.tsx` — banner âmbar "Você está offline" no topo do app
+- Atualizado `public/sw.js` para `v3`: agora cacheia JS chunks (hasheados, seguros) e exclui apenas `_next/data` + `/auth/` + `/api/`
+
+### 🎤 Sessão por Voz Completa com IA (Item #27)
+- Criado `lib/ai/voiceSession.ts` — função `parseVoiceSession()` que usa IA para extrair dados estruturados da transcrição (notas, evolução, custo, peso, protocolo)
+- Criado `components/vet/VoiceSessionButton.tsx` — botão com 5 estágios (idle → recording → transcribing → parsing → done):
+  - Grava áudio com `MediaRecorder`
+  - Transcreve com Whisper (via `transcribeFn`)
+  - Analisa com IA (via `parseFn`)
+  - Preenche automaticamente todos os campos do dialog de nova sessão
+- Integrado na página `/pacientes/[id]`: botão "🎤 Sessão por Voz" ao lado de "Nova Sessão"
+- Ao finalizar, abre o dialog com `notas`, `notas_evolucao`, `custo`, `peso` e `protocolo` já preenchidos
+
+### ✅ Resultado
+- `npm run lint` — 0 erros, 0 warnings
+- `npm run build` — 0 erros (19 rotas)
+- `npx vitest run` — 77/77 testes passando

@@ -2,6 +2,7 @@ import "./globals.css";
 import QueryProvider from '@/providers/QueryProvider';
 import { ThemeProvider } from 'next-themes'
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister'
+import { OfflineBanner } from '@/components/OfflineBanner'
 import { Toaster } from '@/components/ui/sonner'
 import { plusJakartaSans } from '@/lib/fonts'
 
@@ -22,6 +23,7 @@ export default function RootLayout({
       <body className="bg-background text-foreground antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <QueryProvider>
+            <OfflineBanner />
             {children}
           </QueryProvider>
           <Toaster />

@@ -11,6 +11,9 @@ import { useAppointments } from '@/hooks/useAppointments'
 import { useProtocols } from '@/hooks/useProtocols'
 import { useChat, useTranscription, useImageAnalysis } from '@/hooks/useAi'
 import { AudioRecorder } from '@/components/vet/AudioRecorder'
+import { VoiceSessionButton } from '@/components/vet/VoiceSessionButton'
+import { parseVoiceSession } from '@/lib/ai/voiceSession'
+import type { VoiceSessionResult } from '@/components/vet/VoiceSessionButton'
 import { ReportPDF } from '@/components/vet/ReportPDF'
 import { WeightChart } from '@/components/WeightChart'
 import { Timeline } from '@/components/Timeline'
@@ -176,6 +179,20 @@ export default function PatientDetailPage() {
     }
   }
 
+  function handleVoiceSessionResult(result: VoiceSessionResult) {
+    setNotas(result.notas)
+    if (result.notasEvolucao) setNotasEvolucao(result.notasEvolucao)
+    if (result.custo) setCusto(result.custo)
+    if (result.peso) setPeso(result.peso)
+    if (result.protocoloNome && protocols) {
+      const match = protocols.find(
+        (p) => p.nome.toLowerCase().trim() === result.protocoloNome!.toLowerCase().trim()
+      )
+      if (match) setSelectedProtocol(match.id)
+    }
+    setDialogOpen(true)
+  }
+
   async function handleSaveAnamnese() {
     if (!anamneseDraft) return
     await updatePatient.mutateAsync({
@@ -304,9 +321,16 @@ export default function PatientDetailPage() {
                  Previsão de Sessões
                </Button>
              </div>
-             <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto gap-2">
-               <Plus className="h-4 w-4" /> Nova Sessão
-             </Button>
+              <VoiceSessionButton
+                transcribeFn={(blob) => transcribeAi.transcribe(blob)}
+                parseFn={(transcript) =>
+                  parseVoiceSession(transcript, patient.nome, protocols?.map((p) => p.nome) ?? [])
+                }
+                onResult={handleVoiceSessionResult}
+              />
+              <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto gap-2">
+                <Plus className="h-4 w-4" /> Nova Sessão
+              </Button>
            </div>
         </div>
       </div>

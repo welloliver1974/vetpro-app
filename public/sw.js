@@ -1,4 +1,4 @@
-const CACHE = 'vetpro-v2'
+const CACHE = 'vetpro-v3'
 const offlineUrl = '/offline'
 
 self.addEventListener('install', (e) => {
@@ -19,16 +19,12 @@ self.addEventListener('fetch', (e) => {
   const { request } = e
   const url = new URL(request.url)
 
-  // Only handle same-origin GET requests
   if (request.method !== 'GET' || url.origin !== location.origin) return
 
-  // Don't cache JS chunks (they change on every build)
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.json')) return
-
-  // Don't cache auth or API routes
   if (url.pathname.startsWith('/auth/') || url.pathname.startsWith('/api/')) return
 
-  // Network-first for pages, cache as fallback
+  if (url.pathname.includes('_next/data')) return
+
   e.respondWith(
     fetch(request)
       .then((res) => {
