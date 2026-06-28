@@ -1,6 +1,6 @@
 # VetPro App 🐾
 
-> **Última sessão (25/06):** Itens #26 (Dashboard DnD), #25 (Offline MVP) e #27 (Sessão por Voz Completa) implementados. Build + lint + testes 100% passando.
+> **Última sessão (28/06):** Item #14 (Relatório Semanal Automático IA) implementado. Build + lint + testes 100% passando.
 
 SaaS de gestão veterinária focado em **fisioterapia e atendimento domiciliar**.  
 Funciona em notebook, tablet e celular.
@@ -163,7 +163,7 @@ Funciona em notebook, tablet e celular.
 | ~~11~~ | ~~Revisar bundle com `next/bundle-analyzer`~~ — ✅ | 🚀 Performance |
 | ~~12~~ | ~~CI/CD no GitHub Actions (build + lint + testes)~~ — ✅ | 🧪 Qualidade |
 | ~~13~~ | ~~Sugestão de Preço (IA)~~ — ✅ | 🤖 IA |
-| 14 | Relatório Semanal Automático (IA + cron) | 🤖 IA |
+| ~~14~~ | ~~Relatório Semanal Automático (IA + cron)~~ — ✅ | 🤖 IA |
 | ~~15~~ | ~~Backup: exportar/importar dados (JSON)~~ — ✅ | 💡 Funcionalidades |
 | ~~16~~ | ~~Auditoria: log de alterações em registros~~ — ✅ | 💡 Funcionalidades |
 | 17 | Testes de integração/e2e (Playwright) | 🧪 Qualidade |
@@ -1299,8 +1299,8 @@ Botão ao lado dos botões de ação:
 
 ### Próximos passos / Como retomar
 1. Build está estável com e sem env vars — o deploy na VPS (Oracle) deve funcionar automaticamente via GitHub Actions
-2. O roadmap tem itens pendentes: #14 Relatório Semanal Automático, #17 Testes e2e, #22 Relatório automático, #24 Papéis/Permissões, #25 Offline, #26 Dashboard Customizável, #27 Sessão por Voz, #28 Busca Inteligente, #29 i18n
-3. Para continuar: `npm run dev`, escolher um item do roadmap, implementar, rodar `npm run build` e `npx vitest run` antes de commitar
+2. O roadmap tem itens pendentes: #17 Testes e2e, #22 Relatório PDF automático, #24 Papéis/Permissões, #28 Busca Inteligente, #29 i18n
+3. Para continuar: `npm run dev`, escolher um item do roadmap (próximos: #17 Testes e2e, #22 Relatório PDF automático, #24 Papéis/Permissões, #28 Busca Inteligente, #29 i18n), implementar, rodar `npm run build` e `npx vitest run` antes de commitar
 
 ---
 
@@ -1386,14 +1386,22 @@ Botão ao lado dos botões de ação:
 
 ---
 
-## 📋 Próximo: Item #14 — Relatório Semanal Automático (IA + cron)
+## Checkpoint da Sessão 28/06/2026 — Item #14 ✅
 
-### Abordagem: MVP client-side (sem mudança de infra)
+### 🤖 Relatório Semanal Automático (IA + cron)
+
+Implementamos o MVP client-side do relatório semanal automático:
 
 | Passo | Arquivo | Descrição |
 |-------|---------|-----------|
-| 1 | `lib/ai/weeklyReport.ts` | Função que monta prompt com dados da semana (atendimentos, faturamento, sessões por tipo, pacientes, evoluções) e chama `chat()` da IA |
-| 2 | `hooks/useWeeklyReport.ts` | Hook que carrega config, verifica se relatório está devido (dia + hora + semana diferente), gera via IA, envia WhatsApp, registra `lastSentWeek` |
-| 3 | `app/(dashboard)/configuracoes/page.tsx` | Nova seção "Relatório Semanal": toggle, dia da semana, hora, número WhatsApp destino |
-| 4 | Integração | Verificar ao carregar o Dashboard ou via `setInterval` |
-| 5 | Marcar #14 concluído no roadmap |
+| ✅ | `lib/ai/weeklyReport.ts` | `fetchWeeklyData()` busca atendimentos concluídos da semana (seg-dom) e agrega: total, faturamento, por tipo, pacientes únicos. `buildWeeklyPrompt()` monta prompt. `generateWeeklyReport()` chama `chat()` da IA |
+| ✅ | `lib/ai/weeklyReportConfig.ts` | Config armazenada no localStorage (com número criptografado via AES-GCM): `enabled`, `dayOfWeek`, `hour`, `minute`, `phoneNumber`, `lastSentWeek`/`lastSentYear` |
+| ✅ | `hooks/useWeeklyReport.ts` | `useWeeklyReportConfig()` — load/save/clear da config. `useWeeklyReportTrigger()` — verifica se está no dia/hora configurado, se já não enviou esta semana, gera relatório via IA e envia WhatsApp + log |
+| ✅ | `app/(dashboard)/configuracoes/page.tsx` | Nova seção "Relatório Semanal Automático" com toggle, seletor de dia/hora/minuto, input de número WhatsApp, botões salvar/limpar, indicador do último envio |
+| ✅ | `app/(dashboard)/page.tsx` | `useEffect` que chama `triggerCheck()` no mount e repete a cada 60s via `setInterval` |
+
+### ✅ Resultado
+- `npm run build` — 0 erros
+- `npm run lint` — 0 erros
+- `npx vitest run` — 77/77 testes passando
+- Roadmap item #14 ✅

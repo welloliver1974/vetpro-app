@@ -14,9 +14,11 @@ import {
 } from '@/lib/ai/config'
 import { testConnection } from '@/lib/ai'
 import { useAiConfig } from '@/hooks/useAi'
-import { Loader2, CheckCircle2, XCircle, Brain, Key, Save, Trash2, MessageCircle, MessageSquare, Download, Upload } from 'lucide-react'
+import { Loader2, CheckCircle2, XCircle, Brain, Key, Save, Trash2, MessageCircle, MessageSquare, Download, Upload, CalendarClock } from 'lucide-react'
 import { useNotificationConfig } from '@/hooks/useNotificationConfig'
 import { DEFAULT_TEMPLATE, type NotificationConfig } from '@/lib/notification/config'
+import { useWeeklyReportConfig } from '@/hooks/useWeeklyReport'
+import { DAY_LABELS, type WeeklyReportConfig } from '@/lib/ai/weeklyReportConfig'
 
 export default function ConfiguracoesPage() {
   const { config, save, clear, loading } = useAiConfig()
@@ -37,6 +39,14 @@ export default function ConfiguracoesPage() {
   const [notifyTestSending, setNotifyTestSending] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importProgress, setImportProgress] = useState('')
+
+  // Weekly Report state
+  const weeklyReport = useWeeklyReportConfig()
+  const [reportEnabled, setReportEnabled] = useState(false)
+  const [reportDayOfWeek, setReportDayOfWeek] = useState('1')
+  const [reportHour, setReportHour] = useState('18')
+  const [reportMinute, setReportMinute] = useState('0')
+  const [reportPhoneNumber, setReportPhoneNumber] = useState('')
 
   const availableModels = getChatModels(provider)
   const currentProvider = PROVIDERS.find((p) => p.id === provider)
@@ -61,6 +71,17 @@ export default function ConfiguracoesPage() {
       setNotifyTemplate(notify.config.template)
     }
   }, [notify.config])
+
+  useEffect(() => {
+    if (weeklyReport.config) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setReportEnabled(weeklyReport.config.enabled)
+      setReportDayOfWeek(String(weeklyReport.config.dayOfWeek))
+      setReportHour(String(weeklyReport.config.hour))
+      setReportMinute(String(weeklyReport.config.minute))
+      setReportPhoneNumber(weeklyReport.config.phoneNumber)
+    }
+  }, [weeklyReport.config])
 
   async function handleSave() {
     if (!apiKey.trim()) {
@@ -374,6 +395,137 @@ export default function ConfiguracoesPage() {
                 </Button>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Relatório Semanal */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-primary" />
+              Relatório Semanal Automático
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Geração automática de relatório semanal com IA e envio por WhatsApp.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={reportEnabled}
+                onChange={(e) => setReportEnabled(e.target.checked)}
+                className="rounded border-border accent-primary"
+              />
+              <span className="text-sm text-foreground font-medium">Ativar relatório semanal</span>
+            </label>
+
+            <div className="space-y-2">
+              <Label className="text-foreground">Dia da semana</Label>
+              <Select value={reportDayOfWeek} onValueChange={setReportDayOfWeek}>
+                <SelectTrigger className="bg-muted border-border text-card-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-muted border-border text-card-foreground">
+                  {[1, 2, 3, 4, 5, 6].map((d) => (
+                    <SelectItem key={d} value={String(d)}>{DAY_LABELS[d]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-foreground">Hora</Label>
+                <Select value={reportHour} onValueChange={setReportHour}>
+                  <SelectTrigger className="bg-muted border-border text-card-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-muted border-border text-card-foreground max-h-60">
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <SelectItem key={i} value={String(i)}>{String(i).padStart(2, '0')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Minuto</Label>
+                <Select value={reportMinute} onValueChange={setReportMinute}>
+                  <SelectTrigger className="bg-muted border-border text-card-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-muted border-border text-card-foreground">
+                    {['0', '15', '30', '45'].map((m) => (
+                      <SelectItem key={m} value={m}>{m.padStart(2, '0')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground">Número WhatsApp (destino)</Label>
+              <div className="relative">
+                <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="tel"
+                  value={reportPhoneNumber}
+                  onChange={(e) => setReportPhoneNumber(e.target.value)}
+                  placeholder="5511999999999"
+                  className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground pl-10"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                O relatório será gerado e enviado automaticamente para este WhatsApp.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                onClick={async () => {
+                  if (!reportPhoneNumber.trim()) {
+                    toast.error('Informe o número de WhatsApp')
+                    return
+                  }
+                  const cfg: WeeklyReportConfig = {
+                    enabled: reportEnabled,
+                    dayOfWeek: Number(reportDayOfWeek),
+                    hour: Number(reportHour),
+                    minute: Number(reportMinute),
+                    phoneNumber: reportPhoneNumber.trim(),
+                  }
+                  await weeklyReport.save(cfg)
+                  toast.success('Configuração salva!')
+                }}
+                disabled={weeklyReport.loading}
+                className="bg-primary hover:bg-primary/90 text-white gap-2"
+              >
+                <Save className="h-4 w-4" /> Salvar
+              </Button>
+              {weeklyReport.config && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    weeklyReport.clear()
+                    setReportEnabled(false)
+                    setReportDayOfWeek('1')
+                    setReportHour('18')
+                    setReportMinute('0')
+                    setReportPhoneNumber('')
+                    toast.success('Configuração removida')
+                  }}
+                  className="text-muted-foreground hover:text-red-400 gap-2"
+                >
+                  <Trash2 className="h-4 w-4" /> Limpar
+                </Button>
+              )}
+            </div>
+
+            {weeklyReport.config?.lastSentWeek && (
+              <p className="text-xs text-muted-foreground">
+                Último envio: Semana {weeklyReport.config.lastSentWeek}/{weeklyReport.config.lastSentYear}
+              </p>
+            )}
           </CardContent>
         </Card>
 

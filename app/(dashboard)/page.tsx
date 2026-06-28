@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
@@ -23,6 +23,7 @@ import {
 import { Plus, Settings, RotateCcw } from 'lucide-react'
 import { format, parseISO, isSameDay } from 'date-fns'
 import Link from 'next/link'
+import { useWeeklyReportTrigger } from '@/hooks/useWeeklyReport'
 
 type PeriodKey = '7d' | '30d' | 'custom'
 
@@ -81,6 +82,8 @@ export default function DashboardPage() {
     setEditMode,
   } = useDashboardLayout()
 
+  const { triggerCheck } = useWeeklyReportTrigger()
+
   const todayApps = appointments?.filter((a) =>
     isSameDay(parseISO(a.data), new Date())
   ) ?? []
@@ -109,6 +112,13 @@ export default function DashboardPage() {
       // silent
     }
   }
+
+  useEffect(() => {
+    triggerCheck()
+    const interval = setInterval(triggerCheck, 60000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
