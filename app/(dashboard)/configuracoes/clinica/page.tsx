@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import { useMyClinic, useClinicInvites, useClinicMembers, useCreateClinic, useCreateInvite } from '@/hooks/useClinic'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
