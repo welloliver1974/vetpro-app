@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { loadNotifyConfigAsync } from '@/lib/notification/config'
 
 let _supabase: Awaited<ReturnType<typeof createClient>> | null = null
 async function getClient() {
@@ -92,9 +93,36 @@ export function useCreateAppointment() {
 
   return useMutation({
     mutationFn: createAppointment,
-    onSuccess: () => {
+    onSuccess: async (newAppt) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] })
       toast.success('Atendimento agendado!')
+
+      // Dispara Edge Function para enviar WhatsApp (fire-and-forget)
+      try {
+        const config = await loadNotifyConfigAsync()
+        if (config?.enabled && config.provider === 'evolution') {
+          const sb = await getClient()
+          const { data: { session } } = await sb.auth.getSession()
+          if (session?.access_token) {
+            const supabaseUrl = (typeof window !== 'undefined' && (window as unknown as { __SUPABASE_URL__?: string }).__SUPABASE_URL__)
+              || process.env.NEXT_PUBLIC_SUPABASE_URL
+              || ''
+            if (supabaseUrl) {
+              fetch(`${supabaseUrl}/functions/v1/send-whatsapp`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ appointmentId: newAppt.id }),
+                keepalive: true,
+              }).catch(() => { /* silent fail */ })
+            }
+          }
+        }
+      } catch {
+        // Silent fail — não bloqueia o agendamento
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message)

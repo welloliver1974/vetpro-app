@@ -52,9 +52,35 @@ export async function saveNotifyConfig(config: NotificationConfig): Promise<void
     toStore.apiKey = `v1:${encrypted}`
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore))
+
+  // Sincronizar config no profiles.notificacoes_config (server-side)
+  try {
+    const { createClient } = await import('@/lib/supabase/client')
+    const sb = await createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    if (user) {
+      // Para o banco, mandamos a config em texto puro (RLS isola por usuario)
+      const plain = { ...config }
+      await sb.from('profiles').update({ notificacoes_config: plain }).eq('id', user.id)
+    }
+  } catch {
+    // Silent fail - localStorage ja salvou
+  }
 }
 
-export function clearNotifyConfig(): void {
+export async function clearNotifyConfig(): Promise<void> {
   if (typeof window === 'undefined') return
   localStorage.removeItem(STORAGE_KEY)
+
+  // Limpar tambem do banco
+  try {
+    const { createClient } = await import('@/lib/supabase/client')
+    const sb = await createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    if (user) {
+      await sb.from('profiles').update({ notificacoes_config: null }).eq('id', user.id)
+    }
+  } catch {
+    // Silent fail
+  }
 }

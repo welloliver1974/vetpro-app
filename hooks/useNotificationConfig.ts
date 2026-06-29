@@ -19,8 +19,8 @@ export function useNotificationConfig() {
     setConfig(updated)
   }
 
-  function clear() {
-    clearNotifyConfig()
+  async function clear() {
+    await clearNotifyConfig()
     setConfig(null)
   }
 
