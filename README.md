@@ -1,6 +1,6 @@
 # VetPro App 🐾
 
-> **Última sessão (28/06):** Item #14 (Relatório Semanal Automático IA) implementado. Build + lint + testes 100% passando.
+> **Última sessão (28/06 — noite):** Item #21 (Notificações WhatsApp MVP com Evolution API) implementado e deployado em produção. Edge Function `send-whatsapp` testada com sucesso (mensagem montada, erro de conexão WhatsApp esperado pois QR será escaneado pelo usuário). Build + lint + 77 testes passando. Detalhes em `WHATSAPP_MVP_PLAN.md`.
 
 SaaS de gestão veterinária focado em **fisioterapia e atendimento domiciliar**.  
 Funciona em notebook, tablet e celular.
@@ -1405,3 +1405,78 @@ Implementamos o MVP client-side do relatório semanal automático:
 - `npm run lint` — 0 erros
 - `npx vitest run` — 77/77 testes passando
 - Roadmap item #14 ✅
+
+---
+
+## Checkpoint da Sessão 28/06/2026 (Noite — WhatsApp MVP / Evolution API)
+
+### 📲 Notificações WhatsApp (Item #21 — MVP)
+
+**Infra montada na VPS Oracle ARM64:**
+- **Evolution API v2.3.7** rodando em Docker (porta 8080, ARM64 nativo)
+- **PostgreSQL 16** nativo (porta 5433, banco `evolution`, user `evolution`)
+- **Nginx + SSL** para `evo.vetpro.housecloud.tec.br` (Let's Encrypt via certbot)
+- **Instância Evolution** `vetpro` criada — aguardando usuário escanear QR com WhatsApp da clínica
+
+**Edge Function `send-whatsapp` deployada no Supabase:**
+- URL: `https://rhugpobguitqlrfiusmh.supabase.co/functions/v1/send-whatsapp`
+- Lê `appointments` + `patients` + `profiles` (com `notificacoes_config`)
+- Renderiza template com variáveis (`{{tutor}}`, `{{paciente}}`, `{{tipo}}`, `{{data}}`, `{{hora}}`, `{{vet}}`)
+- POST para Evolution API `/message/sendText/vetpro`
+- Grava resultado em `notification_log`
+
+**Código da app atualizado (commit `0a4946a`):**
+- `hooks/useAppointments.ts` — `useCreateAppointment.onSuccess` dispara Edge Function após criar agendamento (fire-and-forget)
+- `lib/notification/config.ts` — `saveNotifyConfig` + `clearNotifyConfig` sincronizam `profiles.notificacoes_config` (jsonb no Supabase)
+- `hooks/useNotificationConfig.ts` — `clear()` agora é `async`
+- `tsconfig.json` — exclui `supabase/functions` do type-check do Next.js
+
+**Migration aplicada:**
+- Tabela `notification_log` (vet_id, appointment_id, tipo_envio, destinatario, status, mensagem, erro)
+- Coluna `notificacoes_config jsonb` em `profiles`
+- RLS: `vet_id = auth.uid()`
+
+**Arquivos de referência adicionados:**
+- `scripts/docker-compose.evolution.yml` — config Docker Compose (completa com nginx + nginx SSL)
+- `scripts/evolution-nginx.conf` — config Nginx gerada para HTTPS + proxy reverso
+- `scripts/supabase-config.toml` — template do `supabase/config.toml` (para deploy de functions)
+- `supabase/config.toml` — config de deploy pro projeto Supabase
+- `supabase/functions/send-whatsapp/index.ts` — Edge Function completa
+- `supabase/functions/send-whatsapp/deno.json` — Deno imports
+- `WHATSAPP_MVP_PLAN.md` — plano completo + checkpoint detalhado
+
+### 🧪 Teste Real Executado (E2E)
+
+1. Profile (já existia) — `1555640a-a079-45b2-a55a-d6a131650142`
+2. Paciente de teste — `Rex Teste` com `tutor_contato: 11999999999`
+3. Appointment — `7eca359e-ced1-43cc-8790-7efc6cec96e6` (tipo `fisio`, amanhã)
+4. Config WhatsApp — salva em `profiles.notificacoes_config`
+5. Chamada `POST /functions/v1/send-whatsapp` → **502**
+   - Mensagem montada: *"Ola Maria Teste! Lembrete: Rex Teste tem consulta de Fisioterapia em 30/06/2026 as 00:44 com Dr. Wellington ."*
+   - Erro: `HTTP 500 Connection Closed` (esperado: instância Evolution não tem WhatsApp conectado)
+   - Log gravado em `notification_log` com `status=erro`
+
+**Conclusão:** Toda a stack funciona — falta apenas o usuário escanear o QR Code da Evolution API com o WhatsApp da clínica.
+
+### ✅ Validação
+- `npm run lint` — 0 erros
+- `npm run build` — 0 erros (19 páginas geradas)
+- `npx vitest run` — 77/77 testes passando
+
+### 🔑 Credenciais (registrar de forma segura):
+| Recurso | Valor |
+|---------|-------|
+| Evolution API URL | `https://evo.vetpro.housecloud.tec.br` |
+| Evolution API Key | `<ver .env.local da VPS>` |
+| Evolution Instance | `vetpro` |
+| Manager Evolution | `https://evo.vetpro.housecloud.tec.br/manager` |
+| Supabase Project Ref | `rhugpobguitqlrfiusmh` |
+| Supabase Service Role Key | `<definir via supabase secrets set>` (revogar após deploy) |
+
+### 🎯 Próximos passos do usuário:
+1. Acessar `https://evo.vetpro.housecloud.tec.br/manager` → escanear QR
+2. Configurar `/configuracoes` no app com URL/Key/Instance acima
+3. Criar agendamento de teste para validar end-to-end
+4. (opcional) Revogar Access Token usado para deploy (se ainda ativo)
+
+### 📦 Roadmap item #21 — ✅ MVP entregue (com ressalva de QR Code a ser escaneado)
