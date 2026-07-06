@@ -1,5 +1,22 @@
 import { parseISO, format, addHours } from 'date-fns'
 
+/**
+ * Generate recurring dates from a start date for given days of week and count.
+ */
+export function generateRecurringDates(start: Date, days: number[], count: number): Date[] {
+  const dates: Date[] = []
+  const current = new Date(start)
+  let maxIter = 365
+  while (dates.length < count && maxIter > 0) {
+    if (days.includes(current.getDay())) {
+      dates.push(new Date(current))
+    }
+    current.setDate(current.getDate() + 1)
+    maxIter--
+  }
+  return dates
+}
+
 type IcsAppointment = {
   id: string
   data: string

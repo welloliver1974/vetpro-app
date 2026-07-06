@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import {
   format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, parseISO, setHours, setMinutes,
-  startOfMonth, endOfMonth, endOfWeek, eachDayOfInterval, addMonths, subMonths, isSameMonth, subDays, isToday,
+  startOfMonth, endOfMonth, endOfWeek, eachDayOfInterval, addMonths, subMonths, subDays,
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useQueryClient } from '@tanstack/react-query'
@@ -11,25 +11,20 @@ import { useAppointments, useCreateAppointment, useUpdateAppointment, useDeleteA
 import { usePatients } from '@/hooks/usePatients'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useChat } from '@/hooks/useAi'
-import { generateIcsEvent, downloadIcs } from '@/lib/calendar'
-import { SignaturePad } from '@/components/vet/SignaturePad'
+import { generateRecurringDates } from '@/lib/calendar'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose,
-} from '@/components/ui/dialog'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { EmptyState } from '@/components/EmptyState'
 import { toast } from 'sonner'
 import {
-  ChevronLeft, ChevronRight, MapPin, ExternalLink, Loader2, Trash2, CheckCircle2, Filter, Bell, BellOff, CalendarDays, PawPrint, Sparkles, Calendar,
+  ChevronLeft, ChevronRight, Loader2, Bell, BellOff, CalendarDays, PawPrint,
 } from 'lucide-react'
+import { AgendaFilters } from '@/components/agenda/AgendaFilters'
+import { CreateAppointmentDialog } from '@/components/agenda/CreateAppointmentDialog'
+import { CalendarGrid } from '@/components/agenda/CalendarGrid'
+import { FinishAppointmentDialog } from '@/components/agenda/FinishAppointmentDialog'
+import { AppointmentCard } from '@/components/agenda/AppointmentCard'
 
 const typeColors: Record<string, string> = {
   fisio: 'border-emerald-500/30 bg-emerald-950/30',
@@ -126,22 +121,6 @@ export default function AgendaPage() {
     setAssinaturaUrl(app.assinatura_url || '')
     setAssinaturaDataUrl('')
     setFinishOpen(true)
-  }
-
-  const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-
-  function generateRecurringDates(start: Date, days: number[], count: number): Date[] {
-    const dates: Date[] = []
-    const current = new Date(start)
-    let maxIter = 365
-    while (dates.length < count && maxIter > 0) {
-      if (days.includes(current.getDay())) {
-        dates.push(new Date(current))
-      }
-      current.setDate(current.getDate() + 1)
-      maxIter--
-    }
-    return dates
   }
 
   const queryClient = useQueryClient()
@@ -379,47 +358,15 @@ Responda APENAS com o valor numérico em reais (R$), sem formatação, sem "R$",
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="grid gap-2 mb-4 sm:flex sm:flex-wrap">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Filter className="h-3.5 w-3.5" /> Filtros:
-        </div>
-        <select
-          value={filterTipo}
-          onChange={(e) => setFilterTipo(e.target.value)}
-          className="bg-muted border border-border text-foreground text-xs rounded-lg px-2 py-1.5"
-        >
-          <option value="">Todos os tipos</option>
-          <option value="fisio">Fisioterapia</option>
-          <option value="clinico">Clínico</option>
-          <option value="externo">Externo</option>
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-muted border border-border text-foreground text-xs rounded-lg px-2 py-1.5"
-        >
-          <option value="">Todos os status</option>
-          <option value="agendado">Agendado</option>
-          <option value="em_andamento">Em andamento</option>
-          <option value="concluido">Concluído</option>
-        </select>
-        <input
-          type="text"
-          value={filterPaciente}
-          onChange={(e) => setFilterPaciente(e.target.value)}
-          placeholder="Buscar paciente..."
-          className="bg-muted border border-border text-foreground text-xs rounded-lg px-2 py-1.5 w-full sm:w-40 placeholder:text-muted-foreground"
-        />
-        {(filterTipo || filterStatus || filterPaciente) && (
-          <button
-            onClick={() => { setFilterTipo(''); setFilterStatus(''); setFilterPaciente('') }}
-            className="text-xs text-primary hover:text-primary/80 px-2"
-          >
-            Limpar filtros
-          </button>
-        )}
-      </div>
+      <AgendaFilters
+        filterTipo={filterTipo}
+        onFilterTipoChange={setFilterTipo}
+        filterStatus={filterStatus}
+        onFilterStatusChange={setFilterStatus}
+        filterPaciente={filterPaciente}
+        onFilterPacienteChange={setFilterPaciente}
+        onClear={() => { setFilterTipo(''); setFilterStatus(''); setFilterPaciente('') }}
+      />
 
       {/* Calendar Grid */}
       {viewMode === 'day' ? (
@@ -437,96 +384,25 @@ Responda APENAS com o valor numérico em reais (R$), sem formatação, sem "R$",
             filteredAppointments
               .sort((a, b) => a.data.localeCompare(b.data))
               .map((app) => (
-                <Card key={app.id} className={`bg-card border-l-4 ${app.status === 'concluido' ? 'border-l-border opacity-60' : app.tipo === 'fisio' ? 'border-l-emerald-500' : app.tipo === 'externo' ? 'border-l-amber-500' : 'border-l-blue-500'}`}>
-                  <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="text-lg font-bold text-primary min-w-[60px] shrink-0">
-                        {format(parseISO(app.data), 'HH:mm')}
-                      </div>
-                      <div className="min-w-0 overflow-hidden">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-card-foreground truncate">{app.patients?.nome || '---'}</span>
-                          <Badge variant="outline" className={`text-[10px] shrink-0 ${app.tipo === 'fisio' ? 'border-emerald-800 text-emerald-400' : app.tipo === 'externo' ? 'border-amber-800 text-amber-400' : 'border-blue-800 text-blue-400'}`}>
-                            {typeLabels[app.tipo]}
-                          </Badge>
-                        </div>
-                        {app.tipo === 'externo' && app.patients?.endereco && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 overflow-hidden">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(app.patients.endereco)}`} target="_blank" rel="noreferrer" className="text-primary hover:text-primary/80 flex items-center gap-0.5 truncate">
-                              {app.patients.endereco} <ExternalLink className="h-3 w-3 shrink-0" />
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button variant="ghost" size="icon-xs" onClick={() => { const ics = generateIcsEvent(app); downloadIcs(ics, `vetpro-${(app.patients?.nome || 'paciente').replace(/\s+/g, '-').toLowerCase()}.ics`) }} className="text-muted-foreground hover:text-primary shrink-0" title="Adicionar ao calendário">
-                        <Calendar className="h-3.5 w-3.5" />
-                      </Button>
-                      {app.status === 'agendado' && (
-                        <>
-                          <Button size="xs" onClick={() => openFinishModal(app)} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 shrink-0">
-                            <CheckCircle2 className="h-3 w-3" /> Finalizar
-                          </Button>
-                          <Button variant="ghost" size="icon-xs" onClick={() => handleDelete(app.id)} className="text-muted-foreground hover:text-red-400 shrink-0">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <AppointmentCard
+                  key={app.id}
+                  app={app}
+                  onFinish={openFinishModal}
+                  onDelete={handleDelete}
+                />
               ))
           )}
         </div>
       ) : (
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2 mb-6 ${viewMode === 'month' ? 'auto-rows-fr' : ''}`}>
-          {visibleDays.map((day) => {
-            const today = isToday(day)
-            const dayApps = appointments?.filter((a) => isSameDay(parseISO(a.data), day)) ?? []
-            const isCurrentMonth = viewMode === 'month' ? isSameMonth(day, currentDate) : true
-            return (
-              <Card
-                key={day.toISOString()}
-                className={`bg-card border-border min-h-[90px] cursor-pointer hover:border-border transition-colors ${today ? 'ring-1 ring-primary/50' : ''} ${!isCurrentMonth ? 'opacity-40' : ''}`}
-                onClick={() => openCreateForDate(day)}
-              >
-                <CardContent className="p-1.5">
-                  <div className="text-center mb-1">
-                    {viewMode === 'week' && (
-                      <div className="text-[10px] uppercase text-muted-foreground">
-                        {format(day, 'EEE', { locale: ptBR })}
-                      </div>
-                    )}
-                    <div className={`text-sm font-bold ${today ? 'text-primary' : 'text-card-foreground'}`}>
-                      {format(day, 'd')}
-                    </div>
-                  </div>
-                  <div className="space-y-0.5">
-                    {dayApps.slice(0, viewMode === 'month' ? 2 : 3).map((app) => (
-                      <div
-                        key={app.id}
-                        className={`text-[10px] px-1 py-0.5 rounded border ${typeColors[app.tipo] || ''} truncate leading-tight`}
-                      >
-                        {viewMode === 'month' ? (
-                          <span>{typeLabels[app.tipo]}</span>
-                        ) : (
-                          <>{app.patients?.nome || '---'} ({typeLabels[app.tipo]})</>
-                        )}
-                      </div>
-                    ))}
-                    {dayApps.length > (viewMode === 'month' ? 2 : 3) && (
-                      <div className="text-[10px] text-muted-foreground text-center">
-                        +{dayApps.length - (viewMode === 'month' ? 2 : 3)}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+        <CalendarGrid
+          visibleDays={visibleDays}
+          currentDate={currentDate}
+          viewMode={viewMode}
+          appointments={appointments}
+          typeColors={typeColors}
+          typeLabels={typeLabels}
+          onDayClick={openCreateForDate}
+        />
       )}
 
       {/* Lista de Atendimentos */}
@@ -536,80 +412,13 @@ Responda APENAS com o valor numérico em reais (R$), sem formatação, sem "R$",
             Atendimentos {viewMode === 'week' ? 'da Semana' : 'do Mês'}
           </h2>
           {filteredAppointments.map((app) => (
-            <Card key={app.id} className={`bg-card border-l-4 ${app.status === 'concluido' ? 'border-l-border opacity-60' : app.tipo === 'fisio' ? 'border-l-emerald-500' : app.tipo === 'externo' ? 'border-l-amber-500' : 'border-l-blue-500'}`}>
-              <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                     <div className="flex items-center gap-4 min-w-0">
-                       <div className="text-lg font-bold text-primary min-w-[60px] shrink-0">
-                         {format(parseISO(app.data), 'HH:mm')}
-                       </div>
-                       <div className="min-w-0 overflow-hidden">
-                         <div className="flex items-center gap-2">
-                           <span className="font-semibold text-card-foreground truncate">{app.patients?.nome || '---'}</span>
-                           <Badge variant="outline" className={`text-[10px] shrink-0 ${app.tipo === 'fisio' ? 'border-emerald-800 text-emerald-400' : app.tipo === 'externo' ? 'border-amber-800 text-amber-400' : 'border-blue-800 text-blue-400'}`}>
-                             {typeLabels[app.tipo]}
-                           </Badge>
-                         </div>
-                         {app.tipo === 'externo' && (
-                           <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 overflow-hidden">
-                             <MapPin className="h-3 w-3 shrink-0" />
-                             {app.patients?.endereco ? (
-                               <a
-                                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(app.patients.endereco)}`}
-                                 target="_blank"
-                                 rel="noreferrer"
-                                 className="text-primary hover:text-primary/80 flex items-center gap-0.5 truncate"
-                               >
-                                 {app.patients.endereco} <ExternalLink className="h-3 w-3 shrink-0" />
-                               </a>
-                               ) : 'Endereço externo'}
-                           </div>
-                         )}
-                         {app.valor && (
-                           <div className="text-xs text-muted-foreground mt-1 truncate">
-                             R$ {Number(app.valor).toFixed(2)}
-                             {app.forma_pagamento && ` • ${app.forma_pagamento === 'pix' ? 'Pix' : app.forma_pagamento === 'cartao' ? 'Cartão' : 'Dinheiro'}`}
-                           </div>
-                         )}
-                       </div>
-                     </div>
-
-                      <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
-                        <Button variant="ghost" size="icon-xs"
-                          onClick={() => {
-                            const ics = generateIcsEvent(app)
-                            const patientName = app.patients?.nome || 'paciente'
-                            downloadIcs(ics, `vetpro-${patientName.replace(/\s+/g, '-').toLowerCase()}.ics`)
-                          }}
-                          className="text-muted-foreground hover:text-primary shrink-0"
-                          title="Adicionar ao calendário">
-                          <Calendar className="h-3.5 w-3.5" />
-                        </Button>
-                        {app.status === 'agendado' && (
-                         <>
-                           <Button size="xs" onClick={() => openFinishModal(app)}
-                             className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 shrink-0">
-                             <CheckCircle2 className="h-3 w-3" /> Finalizar
-                           </Button>
-                           <Button variant="ghost" size="icon-xs"
-                             onClick={() => handleDelete(app.id)}
-                             className="text-muted-foreground hover:text-red-400 shrink-0">
-                             <Trash2 className="h-3.5 w-3.5" />
-                           </Button>
-                         </>
-                       )}
-                       {app.status === 'concluido' && (
-                         <>
-                           <Badge className="bg-muted text-muted-foreground border-border shrink-0">Concluído</Badge>
-                           <Button variant="ghost" size="icon-xs"
-                             onClick={() => handleDelete(app.id)}
-                             className="text-muted-foreground hover:text-red-400 shrink-0">
-                             <Trash2 className="h-3.5 w-3.5" />
-                           </Button>
-                         </>
-                       )}
-                     </div>
-              </CardContent>
-            </Card>
+            <AppointmentCard
+              key={app.id}
+              app={app}
+              onFinish={openFinishModal}
+              onDelete={handleDelete}
+              showDetails
+            />
           ))}
         </div>
       ) : !isLoading && viewMode !== 'day' && (
@@ -631,230 +440,38 @@ Responda APENAS com o valor numérico em reais (R$), sem formatação, sem "R$",
         </div>
       )}
 
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground">
-          <DialogHeader>
-            <DialogTitle>Novo Atendimento</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-foreground">Paciente</Label>
-              <Select value={form.paciente_id} onValueChange={(v) => setForm({ ...form, paciente_id: v })}>
-                <SelectTrigger className="bg-muted border-border text-card-foreground">
-                  <SelectValue placeholder="Selecione um paciente" />
-                </SelectTrigger>
-                <SelectContent className="bg-muted border-border text-card-foreground">
-                  {patients?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-foreground">Data</Label>
-                <Input type="date" value={selectedDate} disabled className="bg-muted border-border text-card-foreground" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground">Horário</Label>
-                <Input type="time" value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })}
-                  className="bg-muted border-border text-card-foreground" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Tipo</Label>
-              <Select value={form.tipo} onValueChange={(v) => setForm({ ...form, tipo: v as 'fisio' | 'clinico' | 'externo' })}>
-                <SelectTrigger className="bg-muted border-border text-card-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-muted border-border text-card-foreground">
-                  <SelectItem value="clinico">Clínico</SelectItem>
-                  <SelectItem value="fisio">Fisioterapia</SelectItem>
-                  <SelectItem value="externo">Externo (Domiciliar)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Valor (R$)</Label>
-              <Input type="number" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })}
-                className="bg-muted border-border text-card-foreground" />
-            </div>
+      <CreateAppointmentDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        defaultDate={selectedDate}
+        patients={patients}
+        isPending={createAppointment.isPending}
+        onSubmit={handleCreate}
+        form={form}
+        onFormChange={setForm}
+        recorrenteAtivo={recorrenteAtivo}
+        onRecorrenteAtivoChange={setRecorrenteAtivo}
+        diasSemana={diasSemana}
+        onDiasSemanaChange={setDiasSemana}
+        numOcorrencias={numOcorrencias}
+        onNumOcorrenciasChange={setNumOcorrencias}
+      />
 
-            <div className="space-y-3 pt-2 border-t border-border">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={recorrenteAtivo}
-                  onChange={(e) => setRecorrenteAtivo(e.target.checked)}
-                  className="rounded border-border accent-primary"
-                />
-                <span className="text-sm text-foreground font-medium">Repetir agendamento</span>
-              </label>
-
-              {recorrenteAtivo && (
-                <div className="space-y-3 pl-6">
-                  <div>
-                    <Label className="text-foreground text-xs">Dias da semana</Label>
-                    <div className="flex gap-1 mt-1.5">
-                      {dayNames.map((name, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setDiasSemana((prev) =>
-                            prev.includes(idx) ? prev.filter((d) => d !== idx) : [...prev, idx]
-                          )}
-                          className={`w-8 h-8 rounded-full text-xs font-medium transition-colors ${
-                            diasSemana.includes(idx)
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-muted-foreground hover:bg-accent'
-                          }`}
-                        >
-                          {name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Label className="text-foreground text-xs shrink-0">Nº de sessões:</Label>
-                    <Input
-                      type="number"
-                      min={2}
-                      max={30}
-                      value={numOcorrencias}
-                      onChange={(e) => setNumOcorrencias(Math.max(2, Math.min(30, Number(e.target.value))))}
-                      className="w-20 h-8 text-sm"
-                    />
-                  </div>
-
-                  {diasSemana.length > 0 && (() => {
-                    const [h, m] = form.hora.split(':').map(Number)
-                    const d = setHours(setMinutes(parseISO(selectedDate), m), h)
-                    const dates = generateRecurringDates(d, diasSemana, numOcorrencias)
-                    const list = dates.slice(0, 5).map((dt) => format(dt, "dd/MM (EEE)", { locale: ptBR }))
-                    return (
-                      <p className="text-xs text-muted-foreground">
-                        Serão criados <strong>{dates.length}</strong> agendamentos:
-                        {' '}{list.join(', ')}{dates.length > 5 && ` e +${dates.length - 5}`}
-                      </p>
-                    )
-                  })()}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <DialogClose asChild>
-                <Button type="button" variant="outline" className="border-border text-foreground">Cancelar</Button>
-              </DialogClose>
-              <Button type="submit" disabled={createAppointment.isPending}
-                className="bg-primary hover:bg-primary/90 text-white">
-                {createAppointment.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Agendar
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Finalizar Dialog */}
-      <Dialog open={finishOpen} onOpenChange={setFinishOpen}>
-        <DialogContent className="bg-card border-border text-card-foreground">
-          <DialogHeader>
-            <DialogTitle>Finalizar Atendimento</DialogTitle>
-          </DialogHeader>
-          {finishingApp && (
-            <div className="space-y-4">
-              {/* Resumo */}
-              <div className="bg-muted rounded-lg p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Paciente</span>
-                  <span className="text-card-foreground font-medium">{finishingApp.patients?.nome || '---'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tipo</span>
-                  <Badge variant="outline" className={
-                    finishingApp.tipo === 'fisio' ? 'border-emerald-800 text-emerald-400' :
-                    finishingApp.tipo === 'externo' ? 'border-amber-800 text-amber-400' :
-                    'border-blue-800 text-blue-400'
-                  }>{typeLabels[finishingApp.tipo]}</Badge>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Horário</span>
-                  <span className="text-card-foreground">{format(parseISO(finishingApp.data), "dd/MM/yyyy 'às' HH:mm")}</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-foreground">Valor Cobrado (R$)</Label>
-                <div className="flex gap-2">
-                  <Input type="number" step="0.01" value={finishValor}
-                    onChange={(e) => setFinishValor(e.target.value)}
-                    placeholder="0,00"
-                    className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground text-lg font-bold flex-1" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSuggestPrice}
-                    disabled={suggestingPrice}
-                    className="border-border text-muted-foreground hover:text-primary shrink-0 gap-1"
-                    title="Sugerir preço com IA"
-                  >
-                    {suggestingPrice ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    Sugerir
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-foreground">Forma de Pagamento</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {[
-                    { value: 'pix', label: 'Pix', icon: '💳' },
-                    { value: 'cartao', label: 'Cartão', icon: '💳' },
-                    { value: 'dinheiro', label: 'Dinheiro', icon: '💰' },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setFinishPayment(finishPayment === option.value ? '' : option.value)}
-                      className={`p-3 rounded-lg border text-center transition-all ${
-                        finishPayment === option.value
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border bg-muted text-muted-foreground hover:border-border'
-                      }`}
-                    >
-                      <div className="text-lg mb-1">{option.icon}</div>
-                      <div className="text-xs font-medium">{option.label}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Assinatura */}
-              <SignaturePad
-                existingUrl={assinaturaUrl}
-                onSave={(dataUrl) => setAssinaturaDataUrl(dataUrl)}
-              />
-
-              <div className="flex justify-end gap-3 pt-2">
-                <DialogClose asChild>
-                  <Button type="button" variant="outline" className="border-border text-foreground">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <Button onClick={handleConfirmFinish} disabled={updateAppointment.isPending}
-                className="bg-primary hover:bg-primary/90 text-white gap-2">
-                  {updateAppointment.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                  <CheckCircle2 className="h-4 w-4" /> Confirmar
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <FinishAppointmentDialog
+        finishOpen={finishOpen}
+        onFinishOpenChange={setFinishOpen}
+        finishingApp={finishingApp}
+        finishValor={finishValor}
+        onFinishValorChange={setFinishValor}
+        finishPayment={finishPayment}
+        onFinishPaymentChange={setFinishPayment}
+        existingAssinaturaUrl={assinaturaUrl}
+        onAssinaturaSave={(dataUrl) => setAssinaturaDataUrl(dataUrl)}
+        suggestingPrice={suggestingPrice}
+        onSuggestPrice={handleSuggestPrice}
+        onConfirmFinish={handleConfirmFinish}
+        isPending={updateAppointment.isPending}
+      />
     </div>
   )
 }
