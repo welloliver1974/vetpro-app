@@ -2,6 +2,8 @@
 
 > **Última sessão (28/06 — noite):** Item #21 (Notificações WhatsApp MVP com Evolution API) implementado e deployado em produção. Edge Function `send-whatsapp` testada com sucesso (mensagem montada, erro de conexão WhatsApp esperado pois QR será escaneado pelo usuário). Build + lint + 77 testes passando. Detalhes em `WHATSAPP_MVP_PLAN.md`.
 
+> 💡 **Próximas ideias:** veja [`IDEAS.md`](./IDEAS.md) para a lista de funcionalidades e melhorias que ainda podem ser implementadas (UX, automação, qualidade, infraestrutura, performance, segurança). Agentes de IA devem ler esse arquivo ao iniciar.
+
 SaaS de gestão veterinária focado em **fisioterapia e atendimento domiciliar**.  
 Funciona em notebook, tablet e celular.
 
