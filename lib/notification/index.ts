@@ -46,6 +46,53 @@ export async function sendWhatsApp(
   }
 }
 
+export async function sendWhatsAppMedia(
+  config: NotificationConfig,
+  to: string,
+  media: string,
+  fileName: string,
+  caption?: string,
+): Promise<NotifyResult> {
+  if (!config.apiUrl || !config.apiKey || !config.instanceName) {
+    return { success: false, error: 'Configuração incompleta' }
+  }
+
+  const url = `${config.apiUrl.replace(/\/$/, '')}/message/sendMedia/${config.instanceName}`
+  const phone = to.replace(/\D/g, '')
+
+  if (!phone) {
+    return { success: false, error: 'Número de telefone inválido' }
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: config.apiKey,
+      },
+      body: JSON.stringify({
+        number: phone,
+        mediatype: 'document',
+        mimetype: 'application/pdf',
+        media,
+        fileName,
+        caption: caption || '',
+      }),
+    })
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      return { success: false, error: `HTTP ${res.status}: ${text}` }
+    }
+
+    return { success: true }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro de rede'
+    return { success: false, error: msg }
+  }
+}
+
 export async function logNotification(params: {
   vetId: string
   appointmentId?: string

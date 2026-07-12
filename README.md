@@ -171,7 +171,7 @@ Funciona em notebook, tablet e celular.
 | ~~19~~ | ~~Pacientes: timeline visual de evolução~~ — ✅ | 💡 Funcionalidades |
 | ~~20~~ | ~~Agenda: agendamento recorrente~~ — ✅ | 💡 Funcionalidades |
 | ~~21~~ | ~~Notificações: lembrete por WhatsApp/e-mail (webhook)~~ — ✅ (MVP) | 💡 Funcionalidades |
-| 22 | Relatório: agendamento automático de PDF mensal | 💡 Funcionalidades |
+| ~~22~~ | ~~Relatório: agendamento automático de PDF mensal~~ — ✅ | 💡 Funcionalidades |
 | ~~30~~ | ~~Integração com Google Calendar / .ics~~ — ✅ (MVP .ics) | 💡 Funcionalidades |
 
 ### 🔴 Complexo
@@ -808,8 +808,9 @@ O comando é **"continua"** — com isso, ler este checkpoint e seguir os próxi
 
 ## 📱 Plano: Notificações WhatsApp / E-mail (Item #21)
 
-> **Status:** 🟡 Pendente — Planejado, aguardando implementação
-> **Esforço estimado:** ~1 dia para MVP
+> **Status:** ✅ **MVP Concluído (28/06/2026)** — Implementado com Evolution API + Edge Function
+> **Esforço real:** ~1 dia
+> **Detalhes:** Infra na VPS Oracle (Evolution API v2.3.7 Docker, PostgreSQL 16, Nginx SSL), Edge Function `send-whatsapp` no Supabase, configuração em `/configuracoes`, log em `notification_log`. Falta apenas escanear QR Code da instância `vetpro` no manager da Evolution API.
 
 ### Ideia Geral
 
@@ -1059,8 +1060,9 @@ Conforme o vet digita o template, o preview atualiza em tempo real com dados fic
 
 ## 📅 Plano: Integração com Google Calendar / .ics (Item #30)
 
-> **Status:** 🟡 Pendente — Planejado, aguardando implementação
-> **Esforço estimado:** ~1 dia para .ics, ~2-3 dias para Google Calendar API completa
+> **Status:** ✅ **MVP Concluído (24/06/2026)** — Botão ".ics" em cada atendimento da agenda
+> **Esforço real:** ~1 dia para .ics (Google Calendar API completa ainda pendente)
+> **Detalhes:** `lib/calendar.ts` com `generateIcsEvent()` + botão "📅 Adicionar ao Calendário" nos cards da agenda → download .ics. Funciona em Google/Apple/Outlook.
 
 ### Ideia Geral
 
@@ -1480,3 +1482,33 @@ Implementamos o MVP client-side do relatório semanal automático:
 4. (opcional) Revogar Access Token usado para deploy (se ainda ativo)
 
 ### 📦 Roadmap item #21 — ✅ MVP entregue (com ressalva de QR Code a ser escaneado)
+
+---
+
+## Checkpoint da Sessão 12/07/2026
+
+### 📄 Relatório Mensal Automático em PDF (Item #22)
+
+Implementamos o relatório mensal automático em PDF, espelhando o padrão do Relatório Semanal (#14):
+
+| Passo | Arquivo | Descrição |
+|-------|---------|-----------|
+| ✅ | `lib/ai/monthlyReport.ts` | `fetchMonthlyData()` agrega o mês anterior (total, faturamento, por tipo, pacientes únicos), `buildMonthlyPrompt()` e `generateMonthlyReport()` chamam a IA |
+| ✅ | `lib/ai/monthlyReportConfig.ts` | Config em localStorage com número criptografado (AES-GCM), `dayOfMonth`/`hour`/`minute`, `lastSentMonth`/`lastSentYear` |
+| ✅ | `lib/ai/monthlyReportPdf.ts` | `generateMonthlyReportPdf()` gera o PDF (jsPDF + jspdf-autotable) com resumo + narrativa da IA, retorna `base64`/`blob`/`filename` |
+| ✅ | `lib/notification/index.ts` | `sendWhatsAppMedia()` envia o PDF via endpoint `/message/sendMedia` da Evolution API (base64) |
+| ✅ | `hooks/useMonthlyReport.ts` | `useMonthlyReportConfig()` + `useMonthlyReportTrigger()` verificam dia/hora e disparam geração + envio + log |
+| ✅ | `app/(dashboard)/configuracoes/page.tsx` | Nova seção "Relatório Mensal Automático (PDF)" com dia do mês, hora, minuto e número WhatsApp |
+| ✅ | `app/(dashboard)/page.tsx` | `triggerMonthlyCheck()` disparado no mount e a cada 60s (junto do semanal) |
+
+**Comportamento:** no dia/mês/hora configurados, o app gera o relatório do mês anterior, monta o PDF e envia via WhatsApp (Evolution API). Evita reenvio com `lastSentMonth`/`lastSentYear`. Requer WhatsApp configurado em `/configuracoes`.
+
+### ✅ Validação
+- `npm run lint` — 0 erros
+- `npm run build` — 0 erros
+- `npx vitest run` — 77/77 testes passando
+- Roadmap item #22 — ✅
+
+### 🧪 Próximos passos
+- Teste manual com MV (veterinário) usando `prompt-teste-relatorio-mensal.md`
+- Commitar + push para o GitHub (deploy automático na VPS)

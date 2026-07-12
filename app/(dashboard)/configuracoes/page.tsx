@@ -19,6 +19,8 @@ import { useNotificationConfig } from '@/hooks/useNotificationConfig'
 import { DEFAULT_TEMPLATE, type NotificationConfig } from '@/lib/notification/config'
 import { useWeeklyReportConfig } from '@/hooks/useWeeklyReport'
 import { DAY_LABELS, type WeeklyReportConfig } from '@/lib/ai/weeklyReportConfig'
+import { useMonthlyReportConfig } from '@/hooks/useMonthlyReport'
+import type { MonthlyReportConfig } from '@/lib/ai/monthlyReportConfig'
 
 export default function ConfiguracoesPage() {
   const { config, save, clear, loading } = useAiConfig()
@@ -47,6 +49,14 @@ export default function ConfiguracoesPage() {
   const [reportHour, setReportHour] = useState('18')
   const [reportMinute, setReportMinute] = useState('0')
   const [reportPhoneNumber, setReportPhoneNumber] = useState('')
+
+  // Monthly Report state
+  const monthlyReport = useMonthlyReportConfig()
+  const [reportMonthlyEnabled, setReportMonthlyEnabled] = useState(false)
+  const [reportMonthlyDay, setReportMonthlyDay] = useState('1')
+  const [reportMonthlyHour, setReportMonthlyHour] = useState('18')
+  const [reportMonthlyMinute, setReportMonthlyMinute] = useState('0')
+  const [reportMonthlyPhoneNumber, setReportMonthlyPhoneNumber] = useState('')
 
   const availableModels = getChatModels(provider)
   const currentProvider = PROVIDERS.find((p) => p.id === provider)
@@ -82,6 +92,17 @@ export default function ConfiguracoesPage() {
       setReportPhoneNumber(weeklyReport.config.phoneNumber)
     }
   }, [weeklyReport.config])
+
+  useEffect(() => {
+    if (monthlyReport.config) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setReportMonthlyEnabled(monthlyReport.config.enabled)
+      setReportMonthlyDay(String(monthlyReport.config.dayOfMonth))
+      setReportMonthlyHour(String(monthlyReport.config.hour))
+      setReportMonthlyMinute(String(monthlyReport.config.minute))
+      setReportMonthlyPhoneNumber(monthlyReport.config.phoneNumber)
+    }
+  }, [monthlyReport.config])
 
   async function handleSave() {
     if (!apiKey.trim()) {
@@ -524,6 +545,140 @@ export default function ConfiguracoesPage() {
             {weeklyReport.config?.lastSentWeek && (
               <p className="text-xs text-muted-foreground">
                 Último envio: Semana {weeklyReport.config.lastSentWeek}/{weeklyReport.config.lastSentYear}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Relatório Mensal */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-primary" />
+              Relatório Mensal Automático (PDF)
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Geração automática de relatório mensal em PDF com IA e envio por WhatsApp.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={reportMonthlyEnabled}
+                onChange={(e) => setReportMonthlyEnabled(e.target.checked)}
+                className="rounded border-border accent-primary"
+              />
+              <span className="text-sm text-foreground font-medium">Ativar relatório mensal</span>
+            </label>
+
+            <div className="space-y-2">
+              <Label className="text-foreground">Dia do mês</Label>
+              <Select value={reportMonthlyDay} onValueChange={setReportMonthlyDay}>
+                <SelectTrigger className="bg-muted border-border text-card-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-muted border-border text-card-foreground max-h-60">
+                  {Array.from({ length: 28 }, (_, i) => (
+                    <SelectItem key={i} value={String(i + 1)}>{String(i + 1).padStart(2, '0')}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                O relatório refere-se sempre ao mês anterior ao selecionado.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-foreground">Hora</Label>
+                <Select value={reportMonthlyHour} onValueChange={setReportMonthlyHour}>
+                  <SelectTrigger className="bg-muted border-border text-card-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-muted border-border text-card-foreground max-h-60">
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <SelectItem key={i} value={String(i)}>{String(i).padStart(2, '0')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Minuto</Label>
+                <Select value={reportMonthlyMinute} onValueChange={setReportMonthlyMinute}>
+                  <SelectTrigger className="bg-muted border-border text-card-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-muted border-border text-card-foreground">
+                    {['0', '15', '30', '45'].map((m) => (
+                      <SelectItem key={m} value={m}>{m.padStart(2, '0')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground">Número WhatsApp (destino)</Label>
+              <div className="relative">
+                <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="tel"
+                  value={reportMonthlyPhoneNumber}
+                  onChange={(e) => setReportMonthlyPhoneNumber(e.target.value)}
+                  placeholder="5511999999999"
+                  className="bg-muted border-border text-card-foreground placeholder:text-muted-foreground pl-10"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                O relatório em PDF será gerado e enviado automaticamente para este WhatsApp.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                onClick={async () => {
+                  if (!reportMonthlyPhoneNumber.trim()) {
+                    toast.error('Informe o número de WhatsApp')
+                    return
+                  }
+                  const cfg: MonthlyReportConfig = {
+                    enabled: reportMonthlyEnabled,
+                    dayOfMonth: Number(reportMonthlyDay),
+                    hour: Number(reportMonthlyHour),
+                    minute: Number(reportMonthlyMinute),
+                    phoneNumber: reportMonthlyPhoneNumber.trim(),
+                  }
+                  await monthlyReport.save(cfg)
+                  toast.success('Configuração salva!')
+                }}
+                disabled={monthlyReport.loading}
+                className="bg-primary hover:bg-primary/90 text-white gap-2"
+              >
+                <Save className="h-4 w-4" /> Salvar
+              </Button>
+              {monthlyReport.config && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    monthlyReport.clear()
+                    setReportMonthlyEnabled(false)
+                    setReportMonthlyDay('1')
+                    setReportMonthlyHour('18')
+                    setReportMonthlyMinute('0')
+                    setReportMonthlyPhoneNumber('')
+                    toast.success('Configuração removida')
+                  }}
+                  className="text-muted-foreground hover:text-red-400 gap-2"
+                >
+                  <Trash2 className="h-4 w-4" /> Limpar
+                </Button>
+              )}
+            </div>
+
+            {monthlyReport.config?.lastSentMonth && (
+              <p className="text-xs text-muted-foreground">
+                Último envio: {monthlyReport.config.lastSentMonth}/{monthlyReport.config.lastSentYear}
               </p>
             )}
           </CardContent>

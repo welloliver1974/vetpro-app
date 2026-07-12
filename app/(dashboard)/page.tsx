@@ -24,6 +24,7 @@ import { Plus, Settings, RotateCcw } from 'lucide-react'
 import { format, parseISO, isSameDay } from 'date-fns'
 import Link from 'next/link'
 import { useWeeklyReportTrigger } from '@/hooks/useWeeklyReport'
+import { useMonthlyReportTrigger } from '@/hooks/useMonthlyReport'
 
 type PeriodKey = '7d' | '30d' | 'custom'
 
@@ -83,6 +84,7 @@ export default function DashboardPage() {
   } = useDashboardLayout()
 
   const { triggerCheck } = useWeeklyReportTrigger()
+  const { triggerCheck: triggerMonthlyCheck } = useMonthlyReportTrigger()
 
   const todayApps = appointments?.filter((a) =>
     isSameDay(parseISO(a.data), new Date())
@@ -115,7 +117,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     triggerCheck()
-    const interval = setInterval(triggerCheck, 60000)
+    triggerMonthlyCheck()
+    const interval = setInterval(() => {
+      triggerCheck()
+      triggerMonthlyCheck()
+    }, 60000)
     return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
