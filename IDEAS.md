@@ -7,7 +7,7 @@ Esta lista serve como referência para qualquer agente de IA que entrar no repos
 ## Experiência do usuário
 - **Modo PWA (Progressive Web App)** – suporte offline avançado, instalação no desktop/mobile.
 - **Tema escuro/claro** com toggle persistido em `localStorage`.
-- **Internacionalização (i18n)** – suporte a inglês e espanhol usando `next-intl` ou `react-i18next`.
+- ~~**Internacionalização (i18n)** – suporte a inglês e espanhol usando `next-intl` ou `react-i18next`.~~ ❌ Descartado
 
 ## Automação & Produtividade
 - **Geração automática de PDF mensal** com cron / Task Scheduler, enviando o relatório por WhatsApp ou e‑mail.

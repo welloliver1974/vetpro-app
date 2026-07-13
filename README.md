@@ -185,7 +185,7 @@ Funciona em notebook, tablet e celular.
 | ~~26~~ | ~~Dashboard: widgets customizáveis (DnD)~~ — ✅ | 💡 Funcionalidades |
 | ~~27~~ | ~~Sessão por Voz Completa (IA)~~ — ✅ | 🤖 IA |
 | 28 | Busca Inteligente (pgvector + embeddings) | 🤖 IA |
-| 29 | Internacionalização (i18n) | 💡 Funcionalidades |
+| ~~29~~ | ~~Internacionalização (i18n)~~ — ❌ (descartado) | 💡 Funcionalidades |
 
 ### Checkpoint concluídos
 - [x] `loading.tsx` em cada route group (skeleton/spinner)
