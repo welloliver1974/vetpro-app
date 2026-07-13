@@ -1,6 +1,6 @@
 # VetPro App 🐾
 
-> **Última sessão (28/06 — noite):** Item #21 (Notificações WhatsApp MVP com Evolution API) implementado e deployado em produção. Edge Function `send-whatsapp` testada com sucesso (mensagem montada, erro de conexão WhatsApp esperado pois QR será escaneado pelo usuário). Build + lint + 77 testes passando. Detalhes em `WHATSAPP_MVP_PLAN.md`.
+> **Última sessão (13/07):** 🐾 **Portal do Tutor** implementado — link público com sessões, fotos, galeria e relatório PDF para o tutor. Fix no deploy automático (envs + pm2 delete all). Build + lint + 77 testes passando.
 
 > 💡 **Próximas ideias:** veja [`IDEAS.md`](./IDEAS.md) para a lista de funcionalidades e melhorias que ainda podem ser implementadas (UX, automação, qualidade, infraestrutura, performance, segurança). Agentes de IA devem ler esse arquivo ao iniciar.
 
@@ -102,6 +102,13 @@ Funciona em notebook, tablet e celular.
 - Geração de PDF com evolução mensal do paciente
 - **Relatório com IA**: gera texto em linguagem clara para o tutor
 - **Assinatura digital** incluída no PDF
+
+#### 🔗 Portal do Tutor
+- Link público único por paciente (token UUID)
+- Página do tutor com resumo do pet, agendamentos futuros e sessões
+- Galeria de fotos das sessões
+- Download de relatório de evolução em PDF
+- Sem necessidade de login — acesso via link compartilhado pelo WhatsApp
 
 #### 🤖 Integração com IA (Multi-Provedor)
 - **Configurações** (`/configuracoes`): escolha o provedor e insira sua chave de API
