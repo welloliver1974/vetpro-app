@@ -28,7 +28,9 @@ jobs:
             git pull origin master
             npm ci --legacy-peer-deps
             npm run build
-            PORT=4004 pm2 restart vetpro --update-env || PORT=4004 pm2 start npm --name vetpro -- start
+            pm2 delete all
+            PORT=4004 pm2 start npm --name vetpro -- start
+            pm2 save
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
