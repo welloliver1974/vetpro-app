@@ -11,6 +11,7 @@ import { useAppointments } from '@/hooks/useAppointments'
 import { useProtocols } from '@/hooks/useProtocols'
 import { useChat, useTranscription, useImageAnalysis } from '@/hooks/useAi'
 import { AudioRecorder } from '@/components/vet/AudioRecorder'
+import { usePatientToken, useGeneratePatientToken } from '@/hooks/usePatientToken'
 import { VoiceSessionButton } from '@/components/vet/VoiceSessionButton'
 import { parseVoiceSession } from '@/lib/ai/voiceSession'
 import type { VoiceSessionResult } from '@/components/vet/VoiceSessionButton'
@@ -37,6 +38,7 @@ import { toast } from 'sonner'
 import {
   Loader2, Plus, ArrowLeft, Sparkles, ImageUp, ImageDown, ScanSearch, X,
   PawPrint, Pencil, Heart, Weight, CalendarDays, FileText, AlertTriangle,
+  Share2, Copy, Check,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -84,6 +86,9 @@ export default function PatientDetailPage() {
   const transcribeAi = useTranscription()
   const visionAi = useImageAnalysis()
   const updatePatient = useUpdatePatient()
+  const { data: existingToken } = usePatientToken(patientId)
+  const generateToken = useGeneratePatientToken()
+  const [copiedLink, setCopiedLink] = useState(false)
 
   const [editingAnamnese, setEditingAnamnese] = useState(false)
   const [anamneseDraft, setAnamneseDraft] = useState<AnamneseDraft | null>(null)
@@ -246,6 +251,41 @@ export default function PatientDetailPage() {
                sessions={sessions || []}
                assinaturaUrl={patientAppointments.find((a) => a.assinatura_url)?.assinatura_url}
              />
+             {existingToken ? (
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => {
+                   const link = `${window.location.origin}/tutor/${existingToken}`
+                   navigator.clipboard.writeText(link)
+                   setCopiedLink(true)
+                   toast.success('Link copiado! Envie para o tutor.')
+                   setTimeout(() => setCopiedLink(false), 2000)
+                 }}
+                 className="gap-2 border-primary/40 text-primary hover:bg-primary/10 w-full sm:w-auto"
+               >
+                 {copiedLink ? (
+                   <><Check className="h-4 w-4" /> Copiado!</>
+                 ) : (
+                   <><Copy className="h-4 w-4" /> Copiar Link</>
+                 )}
+               </Button>
+             ) : (
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => generateToken.mutate(patientId)}
+                 disabled={generateToken.isPending}
+                 className="gap-2 border-primary/40 text-primary hover:bg-primary/10 w-full sm:w-auto"
+               >
+                 {generateToken.isPending ? (
+                   <Loader2 className="h-4 w-4 animate-spin" />
+                 ) : (
+                   <Share2 className="h-4 w-4" />
+                 )}
+                 Compartilhar
+               </Button>
+             )}
              <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 w-full sm:w-auto">
                <Button
                  variant="outline"
