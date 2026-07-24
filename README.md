@@ -1595,3 +1595,23 @@ Implementamos a **Busca Inteligente** que permite encontrar pacientes por simila
 - ✅ `GUIA_DO_USUARIO.md` — guia completo para veterinários (13 seções, linguagem simples)
 - ✅ Página `/ajuda` no app com accordions interativos (mesmo conteúdo do guia)
 - ✅ Link "Ajuda" adicionado na sidebar (ícone BookOpen)
+
+### 🖥️ Checkpoint extra — Sidebar scroll + Config recolhível (23/07)
+
+#### Sidebar com scroll
+- ✅ Nav da sidebar agora com `overflow-y-auto min-h-0` — permite rolar os links principais em telas pequenas
+- ✅ Links do rodapé (Configurações, Clínica, Ajuda) sempre visíveis no final
+
+#### Configurações otimizada para notebook
+- ✅ **Cards recolhíveis**: clique no header para expandir/recolher (Provedor, WhatsApp, Relatórios Semanal/Mensal, Busca Inteligente)
+- ✅ Largura maior: `max-w-xl` → `max-w-3xl` para aproveitar espaço horizontal
+- ✅ State preservado ao recolher — dados preenchidos não se perdem
+
+#### 📦 Arquivos modificados
+| Arquivo | Descrição |
+|---------|-----------|
+| `components/layout/Sidebar.tsx` | Nav com `overflow-y-auto min-h-0` |
+| `app/(dashboard)/configuracoes/page.tsx` | Cards recolhíveis + `max-w-3xl` |
+
+#### ✅ Validação
+- `npm run build` — 0 erros (20 rotas)

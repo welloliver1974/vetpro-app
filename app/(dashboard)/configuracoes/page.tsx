@@ -13,7 +13,7 @@ import { PROVIDERS, getChatModels, type ProviderId, type AiConfig } from '@/lib/
 import { providerSupportsEmbedding } from '@/lib/ai/embeddings'
 import { testConnection } from '@/lib/ai'
 import { useAiConfig } from '@/hooks/useAi'
-import { Loader2, CheckCircle2, XCircle, Brain, Key, Save, Trash2, MessageCircle, MessageSquare, Download, Upload, CalendarClock, Search } from 'lucide-react'
+import { Loader2, CheckCircle2, XCircle, Brain, Key, Save, Trash2, MessageCircle, MessageSquare, Download, Upload, CalendarClock, Search, ChevronDown } from 'lucide-react'
 import { useNotificationConfig } from '@/hooks/useNotificationConfig'
 import { DEFAULT_TEMPLATE, type NotificationConfig } from '@/lib/notification/config'
 import { useWeeklyReportConfig } from '@/hooks/useWeeklyReport'
@@ -60,6 +60,11 @@ export default function ConfiguracoesPage() {
   // Backfill state
   const [backfilling, setBackfilling] = useState(false)
   const [backfillProgress, setBackfillProgress] = useState({ done: 0, total: 0, current: '' })
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+
+  const toggleSection = (key: string) => {
+    setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
 
   const availableModels = getChatModels(provider)
   const currentProvider = PROVIDERS.find((p) => p.id === provider)
@@ -164,16 +169,21 @@ export default function ConfiguracoesPage() {
         </p>
       </div>
 
-      <div className="max-w-xl space-y-6">
+      <div className="max-w-3xl space-y-6">
         {/* Provedor */}
         <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground text-lg">Provedor</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Selecione o serviço de IA que deseja utilizar
-            </CardDescription>
+          <CardHeader className="cursor-pointer select-none" onClick={() => toggleSection('provider')}>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-card-foreground text-lg">Provedor</CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Selecione o serviço de IA que deseja utilizar
+                </CardDescription>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground mt-1 transition-transform ${!collapsed.provider ? '' : '-rotate-90'}`} />
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          {!collapsed.provider && <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label className="text-foreground">Provedor</Label>
               <Select value={provider} disabled={loading} onValueChange={(v) => {
@@ -267,21 +277,26 @@ export default function ConfiguracoesPage() {
                 </Button>
               )}
             </div>
-          </CardContent>
+          </CardContent>}
         </Card>
 
         {/* Notificações WhatsApp */}
         <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-emerald-400" />
-              Notificações WhatsApp
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Aviso automático ao tutor quando um agendamento for criado. Requer uma instância Evolution API.
-            </CardDescription>
+          <CardHeader className="cursor-pointer select-none" onClick={() => toggleSection('whatsapp')}>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-emerald-400" />
+                  Notificações WhatsApp
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Aviso automático ao tutor quando um agendamento for criado. Requer uma instância Evolution API.
+                </CardDescription>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground mt-1 transition-transform ${!collapsed.whatsapp ? '' : '-rotate-90'}`} />
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          {!collapsed.whatsapp && <CardContent className="space-y-4">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -419,21 +434,26 @@ export default function ConfiguracoesPage() {
                 </Button>
               )}
             </div>
-          </CardContent>
+          </CardContent>}
         </Card>
 
         {/* Relatório Semanal */}
         <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
-              <CalendarClock className="h-5 w-5 text-primary" />
-              Relatório Semanal Automático
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Geração automática de relatório semanal com IA e envio por WhatsApp.
-            </CardDescription>
+          <CardHeader className="cursor-pointer select-none" onClick={() => toggleSection('weekly')}>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5 text-primary" />
+                  Relatório Semanal Automático
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Geração automática de relatório semanal com IA e envio por WhatsApp.
+                </CardDescription>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground mt-1 transition-transform ${!collapsed.weekly ? '' : '-rotate-90'}`} />
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          {!collapsed.weekly && <CardContent className="space-y-4">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -550,21 +570,26 @@ export default function ConfiguracoesPage() {
                 Último envio: Semana {weeklyReport.config.lastSentWeek}/{weeklyReport.config.lastSentYear}
               </p>
             )}
-          </CardContent>
+          </CardContent>}
         </Card>
 
         {/* Relatório Mensal */}
         <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
-              <CalendarClock className="h-5 w-5 text-primary" />
-              Relatório Mensal Automático (PDF)
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Geração automática de relatório mensal em PDF com IA e envio por WhatsApp.
-            </CardDescription>
+          <CardHeader className="cursor-pointer select-none" onClick={() => toggleSection('monthly')}>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5 text-primary" />
+                  Relatório Mensal Automático (PDF)
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Geração automática de relatório mensal em PDF com IA e envio por WhatsApp.
+                </CardDescription>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground mt-1 transition-transform ${!collapsed.monthly ? '' : '-rotate-90'}`} />
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          {!collapsed.monthly && <CardContent className="space-y-4">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -684,7 +709,7 @@ export default function ConfiguracoesPage() {
                 Último envio: {monthlyReport.config.lastSentMonth}/{monthlyReport.config.lastSentYear}
               </p>
             )}
-          </CardContent>
+          </CardContent>}
         </Card>
 
         {/* Backup */}
@@ -760,16 +785,21 @@ export default function ConfiguracoesPage() {
 
         {/* Busca Inteligente */}
         <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
-              <Search className="h-5 w-5 text-primary" />
-              Busca Inteligente
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Busca por similaridade semântica em linguagem natural na página de pacientes.
-            </CardDescription>
+          <CardHeader className="cursor-pointer select-none" onClick={() => toggleSection('smartSearch')}>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
+                  <Search className="h-5 w-5 text-primary" />
+                  Busca Inteligente
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Busca por similaridade semântica em linguagem natural na página de pacientes.
+                </CardDescription>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground mt-1 transition-transform ${!collapsed.smartSearch ? '' : '-rotate-90'}`} />
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          {!collapsed.smartSearch && <CardContent className="space-y-4">
             {(() => {
               const supportsEmbedding = providerSupportsEmbedding(config?.provider || 'groq')
               const compatibleProviders = PROVIDERS
@@ -901,7 +931,7 @@ export default function ConfiguracoesPage() {
                 </>
               )
             })()}
-          </CardContent>
+          </CardContent>}
         </Card>
 
         {/* Info */}
