@@ -9,12 +9,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import {
-  PROVIDERS, getChatModels, type ProviderId, type AiConfig,
-} from '@/lib/ai/config'
+import { PROVIDERS, getChatModels, type ProviderId, type AiConfig } from '@/lib/ai/config'
+import { providerSupportsEmbedding } from '@/lib/ai/embeddings'
 import { testConnection } from '@/lib/ai'
 import { useAiConfig } from '@/hooks/useAi'
-import { Loader2, CheckCircle2, XCircle, Brain, Key, Save, Trash2, MessageCircle, MessageSquare, Download, Upload, CalendarClock } from 'lucide-react'
+import { Loader2, CheckCircle2, XCircle, Brain, Key, Save, Trash2, MessageCircle, MessageSquare, Download, Upload, CalendarClock, Search } from 'lucide-react'
 import { useNotificationConfig } from '@/hooks/useNotificationConfig'
 import { DEFAULT_TEMPLATE, type NotificationConfig } from '@/lib/notification/config'
 import { useWeeklyReportConfig } from '@/hooks/useWeeklyReport'
@@ -752,6 +751,55 @@ export default function ConfiguracoesPage() {
             {importProgress && (
               <p className="text-xs text-muted-foreground">{importProgress}</p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Busca Inteligente */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-card-foreground text-lg flex items-center gap-2">
+              <Search className="h-5 w-5 text-primary" />
+              Busca Inteligente
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Busca por similaridade semântica em linguagem natural na página de pacientes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(() => {
+              const supportsEmbedding = providerSupportsEmbedding(config?.provider || 'groq')
+              const compatibleProviders = PROVIDERS
+                .filter((p) => p.models.some((m) => m.capabilities.embedding))
+                .map((p) => p.label)
+              return (
+                <>
+                  <div className={`rounded-lg p-3 border ${supportsEmbedding ? 'bg-emerald-950/20 border-emerald-800/30' : 'bg-amber-950/20 border-amber-800/30'}`}>
+                    <p className={`text-sm flex items-center gap-2 ${supportsEmbedding ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {supportsEmbedding ? (
+                        <><CheckCircle2 className="h-4 w-4" /> Provedor compatível com embeddings</>
+                      ) : (
+                        <><XCircle className="h-4 w-4" /> Provedor atual não suporta embeddings</>
+                      )}
+                    </p>
+                    {!supportsEmbedding && config && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Provedores compatíveis: {compatibleProviders.join(', ')}.
+                      </p>
+                    )}
+                    {!config && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Configure uma chave de API acima para ativar. Provedores compatíveis: {compatibleProviders.join(', ')}.
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Ao digitar no campo de busca da página de pacientes, o app gera um embedding da consulta
+                    e busca por similaridade semântica no banco de dados. Se o provedor não suportar embeddings,
+                    a busca volta ao filtro tradicional por nome/tutor.
+                  </p>
+                </>
+              )
+            })()}
           </CardContent>
         </Card>
 

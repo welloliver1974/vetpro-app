@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
+import { generateEmbedding } from '@/lib/ai/embeddings'
 import { toast } from 'sonner'
 
 let _supabase: Awaited<ReturnType<typeof createClient>> | null = null
@@ -107,6 +108,34 @@ async function deletePatient(id: string) {
   if (error) throw error
 }
 
+// ─── Embedding ───
+
+async function generatePatientEmbedding(patient: Patient) {
+  try {
+    const textForEmbedding = [
+      patient.nome,
+      patient.especie,
+      patient.raca,
+      patient.tutor_nome,
+      patient.queixa_principal,
+      patient.historico_doenca_atual,
+      patient.observacoes,
+    ]
+      .filter(Boolean)
+      .join(' | ')
+
+    if (!textForEmbedding.trim()) return
+
+    const embedding = await generateEmbedding(textForEmbedding)
+    if (!embedding || embedding.length === 0) return
+
+    const sb = await getClient()
+    await sb.from('patients').update({ embedding } as never).eq('id', patient.id)
+  } catch {
+    // Falha silenciosa — não impede o fluxo principal
+  }
+}
+
 export function usePatients() {
   return useQuery({
     queryKey: ['patients'],
@@ -119,9 +148,10 @@ export function useCreatePatient() {
 
   return useMutation({
     mutationFn: createPatient,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['patients'] })
       toast.success('Paciente cadastrado com sucesso!')
+      generatePatientEmbedding(data)
     },
     onError: (error: Error) => {
       toast.error(error.message)
@@ -135,9 +165,10 @@ export function useUpdatePatient() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<PatientInput> }) =>
       updatePatient(id, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['patients'] })
       toast.success('Paciente atualizado!')
+      if (data) generatePatientEmbedding(data)
     },
     onError: (error: Error) => {
       toast.error(error.message)

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePatients, useCreatePatient, useUpdatePatient, useDeletePatient, type Patient, type PatientInput } from '@/hooks/usePatients'
+import { useSmartSearch } from '@/hooks/useSmartSearch'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/EmptyState'
-import { Plus, Pencil, Trash2, Loader2, Search, AlertCircle, PawPrint } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Search, AlertCircle, PawPrint, Sparkles } from 'lucide-react'
 import { patientSchema } from '@/lib/validations'
 
 export default function PatientsPage() {
@@ -28,6 +29,9 @@ export default function PatientsPage() {
   const [page, setPage] = useState(1)
   const perPage = 10
   const tutorNames = [...new Set(patients?.map((p) => p.tutor_nome).filter((n): n is string => !!n) ?? [])]
+  const smartSearch = useSmartSearch(search)
+  const smartResults = smartSearch.data
+  const isSmartActive = smartResults !== undefined && smartResults !== null
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Patient | null>(null)
@@ -87,10 +91,15 @@ export default function PatientsPage() {
     }
   }
 
-  const filtered = patients?.filter((p) =>
-    p.nome.toLowerCase().includes(search.toLowerCase()) ||
-    p.tutor_nome?.toLowerCase().includes(search.toLowerCase())
-  ) ?? []
+  // Busca híbrida: resultados da busca inteligente ou fallback para filtro tradicional
+  const filtered = isSmartActive
+    ? (smartResults ?? [])
+    : (patients?.filter((p) =>
+        search
+          ? p.nome.toLowerCase().includes(search.toLowerCase()) ||
+            p.tutor_nome?.toLowerCase().includes(search.toLowerCase())
+          : true
+      ) ?? [])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
   const paginated = filtered.slice((page - 1) * perPage, page * perPage)
@@ -119,12 +128,22 @@ export default function PatientsPage() {
 
       {/* Search */}
       <div className="relative mb-6 max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        {smartSearch.isFetching ? (
+          <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+        ) : isSmartActive ? (
+          <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+        ) : (
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        )}
         <Input
-          placeholder="Buscar por nome ou tutor..."
+          placeholder={isSmartActive
+            ? 'Resultados da busca inteligente — clique em "Limpar" para sair'
+            : 'Buscar por nome, tutor ou descreva o caso...'}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-card border-border text-card-foreground placeholder:text-muted-foreground"
+          className={`pl-10 bg-card border-border text-card-foreground placeholder:text-muted-foreground ${
+            isSmartActive ? 'border-primary/50 ring-1 ring-primary/20' : ''
+          }`}
         />
       </div>
 
