@@ -1,6 +1,6 @@
 # VetPro App 🐾
 
-> **Última sessão (13/07):** 🐾 **Portal do Tutor** implementado — link público com sessões, fotos, galeria e relatório PDF para o tutor. Fix no deploy automático (envs + pm2 delete all). Build + lint + 77 testes passando.
+> **Última sessão (23/07):** 🔍 **Busca Inteligente com pgvector + embeddings** (Item #28) — busca por similaridade semântica em linguagem natural na página de pacientes. Multi-provedor (OpenAI, Gemini). Backfill em lote. Build + lint 0 erros.
 
 > 💡 **Próximas ideias:** veja [`IDEAS.md`](./IDEAS.md) para a lista de funcionalidades e melhorias que ainda podem ser implementadas (UX, automação, qualidade, infraestrutura, performance, segurança). Agentes de IA devem ler esse arquivo ao iniciar.
 
@@ -121,6 +121,7 @@ Funciona em notebook, tablet e celular.
 - **Relatório com IA**: redige relatório em linguagem clara para o tutor
 - **Previsão de sessões restantes**: IA estima quantas sessões faltam baseada no histórico
 - **Insight do Dia no Dashboard**: clique e receba um resumo inteligente do dia
+- **Busca Inteligente (pgvector)**: busca por similaridade semântica em linguagem natural na página de pacientes com suporte a múltiplos provedores de IA
 
 #### 🏥 Multi-Clínica
 - Criação de clínica com convite por email
@@ -191,7 +192,7 @@ Funciona em notebook, tablet e celular.
 | ~~25~~ | ~~Offline: cache de dados (Service Worker + sync)~~ — ✅ (MVP) | 💡 Funcionalidades |
 | ~~26~~ | ~~Dashboard: widgets customizáveis (DnD)~~ — ✅ | 💡 Funcionalidades |
 | ~~27~~ | ~~Sessão por Voz Completa (IA)~~ — ✅ | 🤖 IA |
-| 28 | Busca Inteligente (pgvector + embeddings) | 🤖 IA |
+| ~~28~~ | ~~Busca Inteligente (pgvector + embeddings)~~ — ✅ | 🤖 IA |
 | ~~29~~ | ~~Internacionalização (i18n)~~ — ❌ (descartado) | 💡 Funcionalidades |
 
 ### Checkpoint concluídos
@@ -1521,3 +1522,70 @@ Implementamos o relatório mensal automático em PDF, espelhando o padrão do Re
 ### 🧪 Próximos passos
 - Teste manual com MV (veterinário) usando `prompt-teste-relatorio-mensal.md`
 - Commitar + push para o GitHub (deploy automático na VPS)
+
+---
+
+## Checkpoint da Sessão 23/07/2026
+
+### 🔍 Busca Inteligente com pgvector + Embeddings (Item #28)
+
+Implementamos a **Busca Inteligente** que permite encontrar pacientes por similaridade semântica em linguagem natural:
+
+#### Infraestrutura
+- ✅ Migration SQL `supabase-migration-pgvector.sql`: extensão pgvector (768d), coluna `embedding` em `patients`, índice IVFFlat, função RPC `match_patients`
+- ✅ 768 dimensões (compatível OpenAI text-embedding-3-small + Gemini embedding-001)
+
+#### Módulo de Embeddings (`lib/ai/embeddings.ts`)
+- ✅ `generateEmbedding(text)` — função multi-provedor (OpenAI, Gemini, OpenRouter)
+- ✅ `providerSupportsEmbedding(providerId)` — verificação de compatibilidade
+- ✅ Provedores SEM suporte (Groq, Anthropic, Omniroute) retornam erro com orientação
+
+#### Hook de Busca (`hooks/useSmartSearch.ts`)
+- ✅ `useSmartSearch(query)` — gera embedding da query e chama RPC `match_patients`
+- ✅ Fallback silencioso: se IA não configurada ou incompatível, retorna null
+- ✅ Cache de 30s com TanStack Query
+
+#### Frontend — Pacientes (`app/(dashboard)/pacientes/page.tsx`)
+- ✅ Ícone dinâmico no input de busca (🔍 tradicional / ✨ IA / ⏳ carregando)
+- ✅ Placeholder muda para "Buscar por nome, tutor ou descreva o caso..."
+- ✅ Resultados da IA substituem o filtro `.includes()` automaticamente
+- ✅ Fallback transparente para filtro tradicional se IA falhar
+
+#### Geração Automática no CRUD (`hooks/usePatients.ts`)
+- ✅ Embedding gerado fire-and-forget após criar ou atualizar paciente
+- ✅ Texto montado a partir de: nome, espécie, raça, queixa principal, histórico, observações
+
+#### Backfill em Lote (`app/(dashboard)/configuracoes/page.tsx`)
+- ✅ Botão "Gerar embeddings para pacientes existentes" na seção Busca Inteligente
+- ✅ Barra de progresso com nome do paciente atual
+- ✅ Processa paciente por paciente com falha silenciosa
+- ✅ Toast com resultado ao finalizar
+
+#### Configuração de IA (`lib/ai/config.ts`)
+- ✅ Adicionado `embedding` ao `ModelCapabilities`
+- ✅ Modelos de embedding: OpenAI (text-embedding-3-small/large), Gemini (embedding-001), OpenRouter
+- ✅ `embeddingModel?` no `AiConfig`, `getEmbeddingModels()`
+
+#### Status em Configurações
+- ✅ Card "Busca Inteligente" mostra se provedor atual é compatível
+- ✅ Lista provedores compatíveis quando não suportado
+
+### ✅ Validação
+- `npm run lint` — 0 erros (2 warnings pré-existentes no Portal do Tutor)
+- `npm run build` — 0 erros (19 rotas)
+- Roadmap item #28 — ✅
+
+### 📦 Arquivos criados
+| Arquivo | Descrição |
+|---------|-----------|
+| `supabase-migration-pgvector.sql` | pgvector (768d) + coluna + RPC |
+| `lib/ai/embeddings.ts` | generateEmbedding() multi-provedor |
+| `hooks/useSmartSearch.ts` | Hook de busca inteligente |
+
+### 📦 Arquivos modificados
+| Arquivo | Descrição |
+|---------|-----------|
+| `lib/ai/config.ts` | embedding capability + modelos |
+| `hooks/usePatients.ts` | Embedding no CRUD |
+| `app/(dashboard)/pacientes/page.tsx` | Busca híbrida |
+| `app/(dashboard)/configuracoes/page.tsx` | Seção + backfill |

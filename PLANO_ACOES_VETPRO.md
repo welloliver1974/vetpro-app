@@ -16,7 +16,7 @@
 | 🟢 P2 | **#5 — Máscara de telefone** | 1 hora | Baixo | — |
 | 🔵 P3 | **#6 — Relatório PDF automático** | 1 dia | Médio | #22 |
 | 🔵 P3 | **#7 — Papéis/Permissões** | 2-3 dias | Alto | #24 |
-| 🔵 P3 | **#8 — Busca Inteligente (pgvector)** | 2-3 dias | Alto | #28 |
+| 🔵 P3 | **#8 — Busca Inteligente (pgvector)** | ✅ Concluído (23/07) | Alto | #28 |
 | 🔵 P3 | **#9 — Internacionalização (i18n)** | 3-4 dias | Médio | #29 |
 
 ---
