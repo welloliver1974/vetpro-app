@@ -17,6 +17,7 @@ import {
   Container,
   ClipboardPlus,
   History,
+  BookOpen,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,7 @@ const navItems = [
 const bottomItems = [
   { href: '/configuracoes', label: 'Configurações', icon: Settings },
   { href: '/configuracoes/clinica', label: 'Clínica', icon: Building2 },
+  { href: '/ajuda', label: 'Ajuda', icon: BookOpen },
 ]
 
 export function Sidebar() {

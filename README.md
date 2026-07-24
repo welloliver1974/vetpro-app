@@ -1589,3 +1589,9 @@ Implementamos a **Busca Inteligente** que permite encontrar pacientes por simila
 | `hooks/usePatients.ts` | Embedding no CRUD |
 | `app/(dashboard)/pacientes/page.tsx` | Busca híbrida |
 | `app/(dashboard)/configuracoes/page.tsx` | Seção + backfill |
+| `components/layout/Sidebar.tsx` | Link Ajuda na sidebar |
+
+### 📖 Guia do Usuário e Ajuda in-app
+- ✅ `GUIA_DO_USUARIO.md` — guia completo para veterinários (13 seções, linguagem simples)
+- ✅ Página `/ajuda` no app com accordions interativos (mesmo conteúdo do guia)
+- ✅ Link "Ajuda" adicionado na sidebar (ícone BookOpen)
