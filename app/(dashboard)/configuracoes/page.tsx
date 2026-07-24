@@ -57,6 +57,10 @@ export default function ConfiguracoesPage() {
   const [reportMonthlyMinute, setReportMonthlyMinute] = useState('0')
   const [reportMonthlyPhoneNumber, setReportMonthlyPhoneNumber] = useState('')
 
+  // Backfill state
+  const [backfilling, setBackfilling] = useState(false)
+  const [backfillProgress, setBackfillProgress] = useState({ done: 0, total: 0, current: '' })
+
   const availableModels = getChatModels(provider)
   const currentProvider = PROVIDERS.find((p) => p.id === provider)
   const canTranscribe = currentProvider?.supportsTranscription ?? false
@@ -797,6 +801,103 @@ export default function ConfiguracoesPage() {
                     e busca por similaridade semântica no banco de dados. Se o provedor não suportar embeddings,
                     a busca volta ao filtro tradicional por nome/tutor.
                   </p>
+
+                  {config && supportsEmbedding && (
+                    <div className="pt-2 space-y-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={backfilling}
+                        onClick={async () => {
+                          setBackfilling(true)
+                          setBackfillProgress({ done: 0, total: 0, current: '' })
+                          try {
+                            const { createClient } = await import('@/lib/supabase/client')
+                            const sb = await createClient()
+                            const { generateEmbedding } = await import('@/lib/ai/embeddings')
+
+                            // Buscar pacientes sem embedding
+                            const { data: patients, error } = await sb
+                              .from('patients')
+                              .select('id, nome, especie, raca, tutor_nome, queixa_principal, historico_doenca_atual, observacoes')
+                              .is('embedding', null)
+
+                            if (error) throw error
+                            if (!patients?.length) {
+                              toast.success('Todos os pacientes já possuem embeddings!')
+                              setBackfilling(false)
+                              return
+                            }
+
+                            setBackfillProgress({ done: 0, total: patients.length, current: '' })
+                            let done = 0
+                            let failed = 0
+
+                            for (const patient of patients) {
+                              const textForEmbedding = [
+                                patient.nome,
+                                patient.especie,
+                                patient.raca,
+                                patient.tutor_nome,
+                                patient.queixa_principal,
+                                patient.historico_doenca_atual,
+                                patient.observacoes,
+                              ].filter(Boolean).join(' | ')
+
+                              if (!textForEmbedding.trim()) {
+                                done++
+                                setBackfillProgress({ done, total: patients.length, current: patient.nome })
+                                continue
+                              }
+
+                              try {
+                                const embedding = await generateEmbedding(textForEmbedding)
+                                if (embedding?.length) {
+                                  await sb.from('patients').update({ embedding } as never).eq('id', patient.id)
+                                }
+                                done++
+                              } catch {
+                                failed++
+                              }
+
+                              setBackfillProgress({ done, total: patients.length, current: patient.nome })
+                            }
+
+                            toast.success(
+                              `Backfill concluído! ${done - failed} embeddings gerados${failed ? `, ${failed} falhas` : ''}.`
+                            )
+                          } catch (err) {
+                            toast.error(err instanceof Error ? err.message : 'Erro no backfill')
+                          } finally {
+                            setBackfilling(false)
+                          }
+                        }}
+                        className="border-primary/40 text-primary hover:bg-primary/10 gap-2"
+                      >
+                        {backfilling ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Search className="h-4 w-4" />
+                        )}
+                        {backfilling ? 'Gerando...' : 'Gerar embeddings para pacientes existentes'}
+                      </Button>
+
+                      {backfilling && backfillProgress.total > 0 && (
+                        <div className="space-y-2">
+                          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-primary h-full rounded-full transition-all duration-300"
+                              style={{ width: `${(backfillProgress.done / backfillProgress.total) * 100}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {backfillProgress.done}/{backfillProgress.total} —
+                            {backfillProgress.current ? ` ${backfillProgress.current}` : ' preparando...'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </>
               )
             })()}
